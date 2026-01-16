@@ -27,19 +27,19 @@ Alle grundlegenden Befehle funktionieren weiterhin in beiden spezifischen Modi
 
 ?    -> Würfelt 1d6
 
-?<number1>,<number2>   -> Würfelt <number1>d<number2> / Wird z. B. wie ?1,20 verwendet, um 1d20 zu würfeln (weitere Beispiele wären ?5,6 für 5d6 usw.)
+?\<number1>,\<number2>   -> Würfelt \<number1>d\<number2> / Wird z. B. wie ?1,20 verwendet, um 1d20 zu würfeln (weitere Beispiele wären ?5,6 für 5d6 usw.)
 
 ### DSA-Modus
-!<stat1>  -> 1d20 gegen stat1
+!\<stat1>  -> 1d20 gegen stat1
 
-!<stat1>,<stat2>,<stat3>,<skill> -> 3d20-Wurf, wie er im DSA-System verwendet wird
+!\<stat1>,\<stat2>,\<stat3>,\<skill> -> 3d20-Wurf, wie er im DSA-System verwendet wird
 
-!<stat1>,<stat2>,<stat3>,<skill>,<modifier> -> Modifizierter 3d20-Wurf, wie er im DSA-System verwendet wird
+!\<stat1>,\<stat2>,\<stat3>,\<skill>,\<modifier> -> Modifizierter 3d20-Wurf, wie er im DSA-System verwendet wird
 
 ! -> 1d20
 
 ### Shadowrun-Modus
-!<pool> -> <pool>d6, wobei 5en oder 6en als Erfolge zählen und es als Glitch zählt, wenn die Hälfte oder mehr der Würfe 1en sind
+!\<pool> -> \<pool>d6, wobei 5en oder 6en als Erfolge zählen und es als Glitch zählt, wenn die Hälfte oder mehr der Würfe 1en sind
 
-!<pool>,e -> Wie oben, jedoch mit explodierenden d6 bei einer 6
+!\<pool>,e -> Wie oben, jedoch mit explodierenden d6 bei einer 6
 
