@@ -8,7 +8,7 @@
         Alick | Alex // DK_Alick
 
 	Version:
-		Beta 1.1
+		Beta 1.2
 	
     Disclaimer:
         This software is provided "as is", without warranty of any kind,
@@ -22,6 +22,7 @@
 		- OOP
 		- maybe Syntax von Lule übernehmen
 --]===]
+local dice = require("roller/dice")
 local aktiv = false
 local response = ""
 local system = nil
@@ -40,22 +41,42 @@ end
 
 -- function to respond to messages (bloated as fuck, needs to be tamed)
 local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, fromID, fromName, fromUniqueIdentifier, message, ffIgnored)
-	--print("Message received")    ENABLE THIS FOR DEBUGGING ONLY
+	--print("Message received")    --ENABLE THIS FOR DEBUGGING ONLY
 	local owner = detectOwner(serverConnectionHandlerID)
+	
+	-- Special Humans get color output
+	if fromName == "Alick | Alex" then
+		print("Gold")
+		response = "[color=#998811]"
+	elseif fromName == "Sir Kilmawa" then
+		print("Grün")
+		response = "[color=#116611]"
+	else
+		print("Default")
+		response = ""
+	end
+	-- Simple D20 Roll from every mode
+	if aktiv and message == "!" then
+		print("-------- \nGeneric D20 \n--------\n")
+		-- Stupid W20 Roll
+		response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W20 - "
+		response = response .. "[b]" .. dice.d20()[1] .. "[/b]"
+		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+	end
+
+	-- Simple D6 Roll from every mode
+	if aktiv and message == "?" then
+		print("-------- \nGeneric D6 \n--------\n")
+		response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W6 - "
+		response = response .. "[b]" .. dice.d6()[1] .. "[/b]"
+		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+	end
+
 	-- Dice Roll System used in DSA mode
 	if aktiv and system == "dsa" and string.sub(message, 1, 1) == "!" and message ~= "!off" and message ~= "!sr" then
 	--if string.sub(message, 1, 1) == "!" then				
 		print("-------- \nDSA Probe gestartet \n--------\n")
 		local content = string.sub(message, 2, 99)
-		
-		-- Stupid W20 Roll
-		if content == "" then 
-			math.randomseed(os.time())
-			local roll = math.random(1,20)
-			response = "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W20 - "
-			response = response .. "[b]" .. roll .. "[/b]"
-			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		end
 		
 		local values = {}
 		local talentMod = false
@@ -83,20 +104,20 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 		if change ~= nil then
 			talentMod = true
 			if change < 0 then
-			response = "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Talentprobe erleichtert um " .. math.abs(change) .. "\n"
+			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Talentprobe erleichtert um " .. math.abs(change) .. "\n"
 			elseif change > 0 then
-			response = "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Talentprobe erschwert um " .. change .. "\n"
+			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Talentprobe erschwert um " .. change .. "\n"
 			end
 		elseif simple ~= true then
-			response = "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Talentprobe \n"
+			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Talentprobe \n"
 		elseif simple then
-			response = "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Probe: "
+			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Probe: "
 		end
 		
-		math.randomseed(os.time())
-		local roll1 = math.random(1,20)
-		local roll2 = math.random(1,20)
-		local roll3 = math.random(1,20)
+		local roll = dice.rollDice(3,20)
+		local roll1 = roll[1]
+		local roll2 = roll[2]
+		local roll3 = roll[3]
 		print("Die Ergebnisse sind: [" .. roll1 .. ", " .. roll2 .. ", " .. roll3 .. "]")
 		if simple then
 			response = response .. "[" .. roll1 .. "]\n" 
@@ -262,9 +283,9 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 		end
 		local pool = values[1]
 		if edge ~= true then
-			response = "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. pool .. "W6\n"
+			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. pool .. "W6\n"
 			for i = 1, pool do
-				local roll = math.random(1, 6)
+				local roll = dice.d6()[1]
 				response = response .. roll
 				if i < pool then 
 					response = response .. ", "
@@ -285,11 +306,11 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				response = response .. "\nErfolge:[b]" .. successes .. "[/b]"
 			end
 		else
-			response = "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. pool .. "W6 mit [b]Edge[/b]\n"
+			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. pool .. "W6 mit [b]Edge[/b]\n"
 			local i = 1
 			local diceToRoll = pool
 			while i <= diceToRoll do
-				local roll = math.random(1, 6)
+				local roll = dice.d6()[1]
 				response = response .. roll						
 				if roll >= 5 then
 					successes = successes+1
@@ -318,35 +339,21 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 		
 	end
-	-- Generic Dice Roll System used mainly in DSA mode
-	if aktiv and string.sub(message, 1, 1) == "?" and message ~= "!off" then
-		print("Generic Dice Roll for DSA")
+	-- Generic Dice Roll System
+	if aktiv and string.sub(message, 1, 1) == "?" then
+		print("Generic Dice Roll")
 		local content = string.sub(message, 2, 99)
-		
-		-- Stupid W6 Roll
-		if content == "" then 
-			math.randomseed(os.time())
-			local roll = math.random(1,6)
-			response = "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W6 - "
-			response = response .. "[b]" .. roll .. "[/b]"
-			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		end
 		local values = {}
-		local talentMod = false
-		local simple = false
-		
 		for value in string.gmatch(content, "([^,]+)") do
 			table.insert(values, tonumber(value))
 		end
 		local number = values[1]
-		local dice = values[2]		
-		response = "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. number .. "W" .. dice .. "\n"
-		local result = 0
-		math.randomseed(os.time())
-		for i = 1, number do			
-			local roll = math.random(1,dice)
-			response = response .. roll
-			result = result+roll
+		local die = values[2]		
+		response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. number .. "W" .. die .. "\n"
+		print("Rolling " .. number .. "d" .. die)
+		local roll, result = dice.rollDice(number,die)
+		for i = 1, number do					
+			response = response .. roll[i]
 			if i < number then response = response .. " + " end		
 		end		
 		response = response .. " = " .. result
@@ -357,22 +364,33 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 	if message == "!on" and fromUniqueIdentifier == owner then 
 		aktiv = true
 		print("Tool Aktiv")
-		response = "[b]Tool Aktiv[/b]\nFolgende Befehle sind funktional \n!dsa - System DSA \n!sr- System Shadowrun \n?[Menge],[Würfel] \n!off - Tool aus"
+		response = "[b]Tool Aktiv[/b]\n !help -> Zeigt Commands an"
+		--response = "[b]Tool Aktiv[/b]\nFolgende Befehle sind funktional \n!dsa - System DSA \n!sr- System Shadowrun \n?[Menge],[Würfel] \n!off - Tool aus"
 		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-	elseif 	message == "!dsa" and aktiv then
-		system = "dsa"
-		print("System DSA")
+	elseif message == "!help" and aktiv then
+		response = response .. "\nFolgende Befehle sind funktional \n!dsa - System DSA \n!sr- System Shadowrun \n?[Menge],[Würfel] \n!off - Tool aus\n"
 		response = response .. "\n[b]System DSA[/b] \n![Wert] -> 1w20 Probe\n" 
 		response = response .. "![Attributwert],[Attributwert],[Attributwert],[Talentwert],<optional Mod> -> 3w20 Probe\n"
-		response = response .. "[b]Generisch[/b] \n? -> 1w20 \n! -> 1w20"
-		response = response .. "\n?[Menge],[Würfel]"
+		response = response .. "\n[b]System Shadowrun[/b] \n![Wert] -> [Wert]w6 Probe\n" 
+		response = response .. "![Wert],e -> Exploding w6 Probe\n"
+		response = response .. "[b]Generisch[/b] \n?[Menge],[Würfel]\n? -> 1w6 \n! -> 1w20"
+		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+	elseif message == "!dsa" and aktiv then
+		system = "dsa"
+		print("System DSA")
+		response = response .. "\n[b]System DSA[/b]"
+		--response = response .. "\n[b]System DSA[/b] \n![Wert] -> 1w20 Probe\n" 
+		--response = response .. "![Attributwert],[Attributwert],[Attributwert],[Talentwert],<optional Mod> -> 3w20 Probe\n"
+		--response = response .. "[b]Generisch[/b] \n? -> 1w6 \n! -> 1w20"
+		--response = response .. "\n?[Menge],[Würfel]"
 		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 	elseif 	message == "!sr" and aktiv then
 		system = "sr"
 		print("System Shadowrun")
-		response = response .. "\n[b]System Shadowrun[/b] \n![Wert] -> [Wert]w6 Probe\n" 
-		response = response .. "![Wert],e -> Exploding w6 Probe\n"
-		response = response .. "[b]Generisch[/b] \n?[Menge],[Würfel]"
+		response = response .. "\n[b]System Shadowrun[/b]"
+		--response = response .. "\n[b]System Shadowrun[/b] \n![Wert] -> [Wert]w6 Probe\n" 
+		--response = response .. "![Wert],e -> Exploding w6 Probe\n"
+		--response = response .. "[b]Generisch[/b] \n?[Menge],[Würfel]"
 		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 	elseif message == "!off" and aktiv then
 		aktiv = false
@@ -381,7 +399,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, "[b]Tool Aus[/b]", 0)
 	end
 	
-	--print("Roller: onTextMessageEvent: " .. serverConnectionHandlerID .. " " .. targetMode .. " " .. toID .. " " .. fromID .. " " .. fromName .. " " .. fromUniqueIdentifier .. " " .. message .. " " .. ffIgnored)
+	print("Roller: onTextMessageEvent: " .. serverConnectionHandlerID .. " " .. targetMode .. " " .. toID .. " " .. fromID .. " " .. fromName .. " " .. fromUniqueIdentifier .. " " .. message .. " " .. ffIgnored)
 	return 0
 end
 
