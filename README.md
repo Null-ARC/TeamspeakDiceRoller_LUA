@@ -31,12 +31,12 @@ All basic commands do still work in both specific modes
 ### DSA Mode
 !\<stat1>  -> 1d20 against stat1
 
-!<stat1>,<stat2>,<stat3>,<skill> -> 3d20 roll used in the DSA system
+!\<stat1>,<stat2>,<stat3>,<skill> -> 3d20 roll used in the DSA system
 
-!<stat1>,<stat2>,<stat3>,<skill>,<modifier> -> modified 3d20 roll used in the DSA system
+!\<stat1>,<stat2>,<stat3>,<skill>,<modifier> -> modified 3d20 roll used in the DSA system
 
 ! -> 1d20
 ### Shadowrun Mode
-!<pool> -> <pool>d6 where 5s or 6s count as success and if half or more of the rolls are 1s it counts as glitched
+!\<pool> -> <pool>d6 where 5s or 6s count as success and if half or more of the rolls are 1s it counts as glitched
 
-!<pool>,e -> same as above, but with exploding d6 on the 6
+!\<pool>,e -> same as above, but with exploding d6 on the 6
