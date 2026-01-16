@@ -29,7 +29,7 @@ All basic commands do still work in both specific modes
 
 ?<number1>,<number2>   -> Rolls <number1>d<number2> / Is used like ?1,20 to roll 1d20 for example (more example would include ?5,6 for 5d6 and so on)
 ### DSA Mode
-!<stat1>  -> 1d20 against stat1
+!\<stat1>  -> 1d20 against stat1
 
 !<stat1>,<stat2>,<stat3>,<skill> -> 3d20 roll used in the DSA system
 
