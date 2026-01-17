@@ -1,4 +1,13 @@
 # Changelog
+## Beta 1.4
+Critical Update ;)
+### Features
+- Introduced changelog.md
+- Krit/Patzer System for DSA in develop
+-- implemented for rolls with "Erleichterung" and "simple Proben"
+- !statcheck implemented
+- Changed one of the custom color nicknames
+- Fixes some bugs by replacing them with brand new ones.
 ## Beta 1.3
 ### Features
 - some additional users get colour output now
