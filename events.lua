@@ -48,18 +48,9 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 	if fromName == "Alick | Alex" then
 		print("Gold")
 		response = "[color=#998811]"
-		
-	elseif (fromName == "Null-ARC | Fenrir" or fromName == "Tarek ben Nizar | NARC") then
-		print("Blau")
-		response = "[color=#4848FF]"
-		
 	elseif fromName == "Sir Kilmawa" then
 		print("Grün")
 		response = "[color=#116611]"
-		
-	elseif (fromName == "Engelsleiche" or fromName == "Jadira saba Nagar" or fromName == "Cassandra vom Düsterhain") then
-		print("Petrol")
-		response = "[color=#037c6e]"
 	else
 		print("Default")
 		response = ""
