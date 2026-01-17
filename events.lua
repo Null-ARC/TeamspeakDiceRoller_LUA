@@ -4,11 +4,12 @@
     A simple and reusable Lua-based dice rolling utility.
     Designed for online roleplaying using Teamspeak 3
 
-    Author:
+      Authors:
         Alick | Alex // DK_Alick
+		Null-ARC | Fenrir
 
 	Version:
-		Beta 1.2
+		Beta 1.3
 	
     Disclaimer:
         This software is provided "as is", without warranty of any kind,
@@ -48,9 +49,18 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 	if fromName == "Alick | Alex" then
 		print("Gold")
 		response = "[color=#998811]"
+		
+	elseif (fromName == "Null-ARC | Fenrir" or fromName == "Tarek ben Nizar | NARC") then
+		print("Blau")
+		response = "[color=#4848FF]"
+		
 	elseif fromName == "Sir Kilmawa" then
 		print("Grün")
 		response = "[color=#116611]"
+		
+	elseif (fromName == "Engelsleiche" or fromName == "Jadira saba Nagar" or fromName == "Cassandra vom Düsterhain") then
+		print("Petrol")
+		response = "[color=#037c6e]"
 	else
 		print("Default")
 		response = ""
@@ -73,7 +83,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 	end
 
 	-- Dice Roll System used in DSA mode
-	if aktiv and system == "dsa" and string.sub(message, 1, 1) == "!" and message ~= "!off" and message ~= "!sr" then
+	if aktiv and system == "dsa" and string.sub(message, 1, 1) == "!" and tonumber(string.sub(message, 2, 2)) then -- message ~= "!off" and message ~= "!sr" and message ~= "!sr5" and message ~= "!kat" and message ~= "!deg" then
 	--if string.sub(message, 1, 1) == "!" then				
 		print("-------- \nDSA Probe gestartet \n--------\n")
 		local content = string.sub(message, 2, 99)
@@ -269,7 +279,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 	end
 	
 	-- Dice Roll System used in SR mode
-	if aktiv and system == "sr" and string.sub(message, 1, 1) == "!" and message ~= "!off" and message ~= "!dsa" then
+	if aktiv and system == "sr" and string.sub(message, 1, 1) == "!" and tonumber(string.sub(message, 2, 2)) then -- message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!kat" and message ~= "!deg" then
 		print("Generic Dice Roll for SR")
 		local content = string.sub(message, 2, 99)
 		local values = {}
@@ -301,9 +311,9 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				glitched = true
 			end
 			if glitched then
-				response = response .. "[b] \nGLITCHED[/b] \nErfolge:[b]" .. successes .. "[/b]"
+				response = response .. "[b] \nGLITCHED[/b] \nErfolge: [b]" .. successes .. "[/b]"
 			else
-				response = response .. "\nErfolge:[b]" .. successes .. "[/b]"
+				response = response .. "\nErfolge: [b]" .. successes .. "[/b]"
 			end
 		else
 			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. pool .. "W6 mit [b]Edge[/b]\n"
@@ -331,14 +341,14 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				glitched = true
 			end
 			if glitched then
-				response = response .. "[b] \nGLITCHED[/b] \nErfolge:[b]" .. successes .. "[/b]"
+				response = response .. "[b] \nGLITCHED[/b] \nErfolge: [b]" .. successes .. "[/b]"
 			else
 				response = response .. "\nErfolge:[b]" .. successes .. "[/b]"
 			end
 		end
 		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		
 	end
+	
 	-- Generic Dice Roll System
 	if aktiv and string.sub(message, 1, 1) == "?" then
 		print("Generic Dice Roll")
@@ -360,50 +370,111 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 	end
 	
-	-- Powerswitch & Systemswitch
-	if message == "!on" and fromUniqueIdentifier == owner then 
-		aktiv = true
-		print("Tool Aktiv")
-		response = "[b]Tool Aktiv[/b]\n !help -> Zeigt Commands an"
-		--response = "[b]Tool Aktiv[/b]\nFolgende Befehle sind funktional \n!dsa - System DSA \n!sr- System Shadowrun \n?[Menge],[Würfel] \n!off - Tool aus"
+	-- Dice Roll System used in KatharSys mode (aka Degenesis)
+	if aktiv and system == "kat" and string.sub(message, 1, 1) == "!" and tonumber(string.sub(message, 2, 2)) then -- message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!sr" and message ~= "!sr5" then
+		print("Generic Dice Roll for KatharSys")
+		local content = string.sub(message, 2, 99)
+		local values = {}
+		local successes = 0
+		local ones = 0
+		local triggers = 0
+		local botched = false
+		local edge = false
+		for value in string.gmatch(content, "([^,]+)") do
+			table.insert(values, tonumber(value))
+		end
+		local pool = values[1]
+		response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. pool .. "W6\n"
+		if pool > 12 then
+			successes = (pool - 12)
+			pool = 12
+		end
+		for i = 1, pool do
+			local roll = dice.d6()[1]
+			response = response .. roll
+			if i < pool then 
+				response = response .. ", "
+			end		
+			if roll >= 4 then
+				successes = successes+1
+			end
+			if roll == 6 then
+				triggers = triggers+1
+			end
+			if roll == 1 then
+				ones = ones+1
+			end
+		end
+		if ones > successes then
+			botched = true
+		end
+		if botched then
+			response = response .. "[b] \nPatzer![/b] \nErfolge: [b]" .. successes .. "[/b] \nTrigger: [b]" .. triggers .. "[/b]"
+		else
+			response = response .. "\nErfolge: [b]" .. successes .. "[/b] \nTrigger: [b]" .. triggers .. "[/b]"
+		end
 		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-	elseif message == "!help" and aktiv then
-		response = response .. "\nFolgende Befehle sind funktional \n!dsa - System DSA \n!sr- System Shadowrun \n?[Menge],[Würfel] \n!off - Tool aus\n"
-		response = response .. "\n[b]System DSA[/b] \n![Wert] -> 1w20 Probe\n" 
-		response = response .. "![Attributwert],[Attributwert],[Attributwert],[Talentwert],<optional Mod> -> 3w20 Probe\n"
-		response = response .. "\n[b]System Shadowrun[/b] \n![Wert] -> [Wert]w6 Probe\n" 
-		response = response .. "![Wert],e -> Exploding w6 Probe\n"
-		response = response .. "[b]Generisch[/b] \n?[Menge],[Würfel]\n? -> 1w6 \n! -> 1w20"
-		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-	elseif message == "!dsa" and aktiv then
-		system = "dsa"
-		print("System DSA")
-		response = response .. "\n[b]System DSA[/b]"
-		--response = response .. "\n[b]System DSA[/b] \n![Wert] -> 1w20 Probe\n" 
-		--response = response .. "![Attributwert],[Attributwert],[Attributwert],[Talentwert],<optional Mod> -> 3w20 Probe\n"
-		--response = response .. "[b]Generisch[/b] \n? -> 1w6 \n! -> 1w20"
-		--response = response .. "\n?[Menge],[Würfel]"
-		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-	elseif 	message == "!sr" and aktiv then
-		system = "sr"
-		print("System Shadowrun")
-		response = response .. "\n[b]System Shadowrun[/b]"
-		--response = response .. "\n[b]System Shadowrun[/b] \n![Wert] -> [Wert]w6 Probe\n" 
-		--response = response .. "![Wert],e -> Exploding w6 Probe\n"
-		--response = response .. "[b]Generisch[/b] \n?[Menge],[Würfel]"
-		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-	elseif message == "!off" and aktiv then
-		aktiv = false
-		system = nil
-		print("Tool Aus")
-		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, "[b]Tool Aus[/b]", 0)
 	end
 	
-	print("Roller: onTextMessageEvent: " .. serverConnectionHandlerID .. " " .. targetMode .. " " .. toID .. " " .. fromID .. " " .. fromName .. " " .. fromUniqueIdentifier .. " " .. message .. " " .. ffIgnored)
-	return 0
-end
+	-- Powerswitch & Systemswitch
+	if fromUniqueIdentifier == owner then
+		if message == "!on" or message == "!dice" then 
+			aktiv = true
+			print("Tool Aktiv")
+			response = "[b]Tool Aktiv[/b]\n !help -> Zeigt Commands an"
+			--response = "[b]Tool Aktiv[/b]\nFolgende Befehle sind funktional \n!dsa - System DSA \n!sr- System Shadowrun \n?[Menge],[Würfel] \n!off - Tool aus"
+			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+		elseif aktiv then
+			if message == "!help" then
+				response = response .. "\nFolgende Befehle sind funktional \n!dsa - System DSA \n!sr- System Shadowrun \n?[Menge],[Würfel] \n!off - Tool aus\n"
+				response = response .. "\n[b]System DSA[/b] \n![Wert] -> 1w20 Probe\n" 
+				response = response .. "![Attributwert],[Attributwert],[Attributwert],[Talentwert],<optional Mod> -> 3w20 Probe\n"
+				response = response .. "\n[b]System Shadowrun[/b] \n![Wert] -> [Wert]w6 Probe\n" 
+				response = response .. "![Wert],e -> Exploding w6 Probe\n"
+				response = response .. "[b]Generisch[/b] \n?[Menge],[Würfel]\n? -> 1w6 \n! -> 1w20"
+				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+			elseif message == "!dsa" or message == "!dsa4" then
+				system = "dsa"
+				print("System DSA 4.1")
+				response = response .. "\n[b]System DSA 4.1[/b]"
+				--response = response .. "\n[b]System DSA[/b] \n![Wert] -> 1w20 Probe\n" 
+				--response = response .. "![Attributwert],[Attributwert],[Attributwert],[Talentwert],<optional Mod> -> 3w20 Probe\n"
+				--response = response .. "[b]Generisch[/b] \n? -> 1w6 \n! -> 1w20"
+				--response = response .. "\n?[Menge],[Würfel]"
+				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+			elseif message == "!sr" or message == "!sr5" then
+				system = "sr"
+				print("System Shadowrun 5")
+				response = response .. "\n[b]System Shadowrun 5[/b]"
+				--response = response .. "\n[b]System Shadowrun[/b] \n![Wert] -> [Wert]w6 Probe\n" 
+				--response = response .. "![Wert],e -> Exploding w6 Probe\n"
+				--response = response .. "[b]Generisch[/b] \n?[Menge],[Würfel]"
+				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+			elseif message == "!kat" or message == "!deg" then
+				system = "kat"
+				print("System KatharSys aka	Degenesis")
+				response = response .. "\n[b]System KatharSys aka Degenesis[/b]"
+				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+			elseif message == "!off" then
+				aktiv = false
+				system = nil
+				print("Tool Aus")
+				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, "[b]Tool Aus[/b]", 0)
+			else
+			end
+		else
+		end
+	end
 
 
 roller_events = {
 	onTextMessageEvent = onTextMessageEvent,
 }
+
+roller_events = {
+	onTextMessageEvent = onTextMessageEvent,
+}
+
+
+
+
