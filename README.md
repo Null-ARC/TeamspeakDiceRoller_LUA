@@ -19,13 +19,16 @@ All basic commands do still work in both specific modes
 ### Basic Commands
 - !on or !dice	-> Enable the Tool
 - !off 			-> Disable the Tool
-- !help -> Displays Commands in Chat
-- !statcheck -> Rolls 100k of every dice and outputs the average
+- !help 		-> Displays Commands in Chat
+- !statcheck 	-> Rolls 100k of every dice and outputs the average
 - !dsa or !dsa4	-> Set the dice rolling system to "DSA 4.1" mode (for the german TTRPG "Das schwarze Auge" in version 4.1)
 - !sr or !sr5	-> Set the dice rolling system to "Shadowrun 5" mode  (for the TTRPG "Shadowrun" in version 5)
 - !kat or !deg	-> Set the dice rolling system to "KatharSys" mode (for the TTRPG "Degenesis Rebirth") 
-- ! 			-> 1d20
+### Generic Dice Rolls
+- ! 			-> Rolls 1d20
 - ?				-> Rolls 1d6
+- !!			-> Rolls 1d100
+- ??			-> Rolls a so-called "D66" aka 2d6 but read as a two-digit hexal number
 - ?\<number1>,\<number2>   -> Rolls \<number1>d\<number2> / Is used like ?1,20 to roll 1d20 for example (more example would include ?5,6 for 5d6 and so on)
 ### DSA Mode
 - !\<stat1>  -> 1d20 against stat1

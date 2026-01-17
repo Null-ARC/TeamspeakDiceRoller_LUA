@@ -56,7 +56,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 		print("Blau")
 		response = "[color=#4848FF]"
 		
-	elseif fromName == "Sir Kilmawa | Richard" then
+	elseif fromUniqueIdentifier == "Iq7EpOG3uYOh50FnZLSD2Plmmlc=" or fromName == "Sir Kilmawa | Richard" then
 		print("Grün")
 		response = "[color=#116611]"
 		
@@ -76,21 +76,32 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 		response = ""
 	end
 	
-	-- Simple D20 Roll from every mode
-	if aktiv and message == "!" then
-		print("-------- \nGeneric D20 \n--------\n")
-		-- Stupid W20 Roll
-		response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W20 - "
-		response = response .. "[b]" .. dice.d20()[1] .. "[/b]"
-		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-	end
-
-	-- Simple D6 Roll from every mode
-	if aktiv and message == "?" then
-		print("-------- \nGeneric D6 \n--------\n")
-		response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W6 - "
-		response = response .. "[b]" .. dice.d6()[1] .. "[/b]"
-		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+	-- Simple Rolls from every mode
+	if aktiv then
+		if message == "!" then
+			print("-------- \nGeneric D20 \n--------\n")
+			-- Stupid W20 Roll
+			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W20 - "
+			response = response .. "[b]" .. dice.d20()[1] .. "[/b]"
+			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+		elseif message == "?" then
+			print("-------- \nGeneric D6 \n--------\n")
+			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W6 - "
+			response = response .. "[b]" .. dice.d6()[1] .. "[/b]"
+			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+		elseif message == "!!" then
+			print("-------- \nGeneric D100 \n--------\n")
+			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W100 - "
+			response = response .. "[b]" .. dice.d100()[1] .. "[/b]"
+			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+		elseif message == "??" then
+			print("-------- \nGeneric D66 (2D6) \n--------\n")
+			rolls = dice.rollDice(2, 6)
+			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W66 (2W6) - "
+			response = response .. "[b]" .. rolls[1] .. rolls[2] .. "[/b]"
+			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+		else
+		end
 	end
 
 	if aktiv and tonumber(string.sub(message, 2, 2)) then

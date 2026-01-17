@@ -8,9 +8,10 @@ Fixing DSA (as usual for 4.1)
 - now "simple" single stat checks in DSA also can have boni or mali (as they're supposed to!)
 - Surprisingly severe refactoring of the DSA mode code section to facilitate that
 - succeeding a DSA skill check with 0 skill points remaining will round up to 1 point as supposed to by the rules
-- The only actual new feature:
+- The only actual new features:
 - Multi D6 rolls with or without modifier can now be done in DSA mode via ?<dice> or ?<dice>,<modifier> for eg Regeneration, Damage, Patzertabelle, etc
-- Addendum: Version tracking in events.lua  on activation of the tool has been added (still needs to be set manually though)
+- Generic dice rolls are expanded by "!!" for 1d100 & "??" for 1d66 aka 2d6 read as 2-digit hexal number
+- Addendum: Version tracking in events.lua on activation of the tool has been added (still needs to be set manually though)
 ## Beta 1.4
 Critical Update ;)
 ### Features
