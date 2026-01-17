@@ -19,6 +19,8 @@ All basic commands do still work in both specific modes
 ### Basic Commands
 - !on or !dice	-> Enable the Tool
 - !off 			-> Disable the Tool
+- !help -> Displays Commands in Chat
+- !statcheck -> Rolls 100k of every dice and outputs the average
 - !dsa or !dsa4	-> Set the dice rolling system to "DSA 4.1" mode (for the german TTRPG "Das schwarze Auge" in version 4.1)
 - !sr or !sr5	-> Set the dice rolling system to "Shadowrun 5" mode  (for the TTRPG "Shadowrun" in version 5)
 - !kat or !deg	-> Set the dice rolling system to "KatharSys" mode (for the TTRPG "Degenesis Rebirth") 
