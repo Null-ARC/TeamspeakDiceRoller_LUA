@@ -9,6 +9,7 @@ Critical Update ;)
 - Changed one of the custom color nicknames
 - Fixes some bugs by replacing them with brand new ones.
 ## Beta 1.3
+KatharSys and Catharsis
 ### Features
 - some additional users get colour output now
 - syntax was expanded to future-proof for additonal versions of existing games aswell as other tools (FULLY BACKWARDS COMPATIBLE): !sr5 same as !sr, !dsa4 same as !dsa, !dice same as !on
