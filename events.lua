@@ -466,15 +466,15 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 		else
 		end
 	end
-
-
-roller_events = {
-	onTextMessageEvent = onTextMessageEvent,
-}
+	print("Roller: onTextMessageEvent: " .. serverConnectionHandlerID .. " " .. targetMode .. " " .. toID .. " " .. fromID .. " " .. fromName .. " " .. fromUniqueIdentifier .. " " .. message .. " " .. ffIgnored)
+	return 0
+end
 
 roller_events = {
 	onTextMessageEvent = onTextMessageEvent,
 }
+
+
 
 
 
