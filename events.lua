@@ -523,7 +523,16 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				table.insert(values, tonumber(value))
 			end
 			local pool = values[1]
-			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. pool .. "W6\n"
+			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. pool .. "W6"
+			if mod == nil then
+				elseif mod > 0 then
+					response = response .. "+" .. mod
+				elseif mod < 0 then
+					response = response .. mod
+				else
+					response = response .. "+0"
+				end
+				response = response .. "\n"
 			if pool > 12 then
 				successes = (pool - 12)
 				pool = 12
