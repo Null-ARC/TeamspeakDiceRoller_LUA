@@ -22,15 +22,21 @@ Alle grundlegenden Befehle funktionieren weiterhin in beiden spezifischen Modi
 - !dsa oder !dsa4	-> Setzt das Würfelsystem in den „DSA 4.1“-Modus (für das deutsche Pen&Paper RPG „Das schwarze Auge“ in der Edition 4.1)
 - !sr oder !sr5		-> Setzt das Würfelsystem in den „ShadowRun 5“-Modus (für das Pen&Paper RPG „Shadowrun“ in der 5. Edition)
 - !kat oder !deg	-> Setzt das Würfelsystem in den "KatharSys"-Modus (für das Pen&Paper RPG "Degenesis" in der Rebirth-Version)
-- !      			-> 1d20
-- ?      			-> Würfelt 1d6
+### Generische Würfelwürfe
+- !      			-> Würfelt 1W20
+- ?      			-> Würfelt 1W6
+- !!				-> Würfelt 1W100
+- ??				-> Würfelt einen sogenannten "W66" aka 2W6 aber als zweistellige Hexalzahl gelesen
 - ?\<number1>,\<number2>   -> Würfelt \<number1>d\<number2> / Wird z. B. wie ?1,20 verwendet, um 1d20 zu würfeln (weitere Beispiele wären ?5,6 für 5d6 usw.)
 ### DSA-Modus
 - !\<stat1>  -> 1d20 gegen stat1
+- !\<stat1>,\<modifier> -> modifizierter 1d20 gegen stat1, wie er im DSA-System verwendet wird
 - !\<stat1>,\<stat2>,\<stat3>,\<skill> -> 3d20-Wurf, wie er im DSA-System verwendet wird
 - !\<stat1>,\<stat2>,\<stat3>,\<skill>,\<modifier> -> Modifizierter 3d20-Wurf, wie er im DSA-System verwendet wird
+- ?\<anzahl> -> wirft Anzahl an W6ern & summiert sie auf
+- ?\<anzahl>,\<modifikator> -> wirft Anzahl an W6ern, summiert sie auf & addiert Modifikator
 ### ShadowRun-Modus
-- !\<pool>   -> \<pool>d6, wobei 5en oder 6en als Erfolge zählen und es als Glitch zählt, wenn die Hälfte oder mehr der Würfe 1en sind
-- !\<pool>,e -> Wie oben, jedoch mit explodierenden d6 bei einer 6
+- !\<anzahl> -> wirft Anzahl an W6ern, wobei 5en oder 6en als Erfolge zählen und es als Glitch zählt, wenn die Hälfte oder mehr der Würfe 1en sind
+- !\<anzahl>,e -> Wie oben, jedoch mit explodierenden d6 bei einer 6
 ### KatharSys-Modus
-- !\<pool>   -> \<pool>d6 (maximal jedoch 12, überzählige werden automatisch zu Erfolgen), wobei 4en, 5en oder 6en als Erfolge zählen, 6en zusätzlich noch als Trigger, und es als Patzer zählt, wenn mehr 1en als Erfolge erwürfelt werden
+- !\<anzahl> -> wirft Anzahl an W6ern (maximal jedoch 12, überzählige werden automatisch zu Erfolgen), wobei 4en, 5en oder 6en als Erfolge zählen, 6en zusätzlich noch als Trigger, und es als Patzer zählt, wenn mehr 1en als Erfolge erwürfelt werden
