@@ -525,12 +525,10 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 			local pool = values[1]
 			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. pool .. "W6"
 			if mod == nil then
-			elseif mod > 0 then
+			elseif mod >= 0 then
 				response = response .. "+" .. mod
-			elseif mod < 0 then
-				response = response .. mod
 			else
-				response = response .. "+0"
+				response = response .. mod
 			end
 			response = response .. "\n"
 			if pool > 12 then
