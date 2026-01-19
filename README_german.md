@@ -19,16 +19,16 @@ Alle grundlegenden Befehle funktionieren weiterhin in beiden spezifischen Modi
 ### Grundlegende Befehle
 - !on oder !dice	-> Aktiviert das Tool
 - !off   			-> Deaktiviert das Tool
-- !help -> Zeigt die Hilfeseite an
-- !farbe,\<farbe> -> Setzt die Farbe für den User
+- !help 			-> Zeigt die Hilfeseite an
+- !farbe,\<farbe>	-> Setzt die Farbe für den User
 - !dsa oder !dsa4	-> Setzt das Würfelsystem in den „DSA 4.1“-Modus (für das deutsche Pen&Paper RPG „Das schwarze Auge“ in der Edition 4.1)
 - !sr oder !sr5		-> Setzt das Würfelsystem in den „ShadowRun 5“-Modus (für das Pen&Paper RPG „Shadowrun“ in der 5. Edition)
 - !kat oder !deg	-> Setzt das Würfelsystem in den "KatharSys"-Modus (für das Pen&Paper RPG "Degenesis" in der Rebirth-Version)
 ### Generische Würfelwürfe
-- !      			-> Würfelt 1W20
-- ?      			-> Würfelt 1W6
-- !!				-> Würfelt 1W100
-- ??				-> Würfelt einen sogenannten "W66" aka 2W6 aber als zweistellige Hexalzahl gelesen
+- !     -> Würfelt 1W20
+- ?     -> Würfelt 1W6
+- !!	-> Würfelt 1W100
+- ??	-> Würfelt einen sogenannten "W66" aka 2W6 aber als zweistellige Hexalzahl gelesen
 - ?\<number1>,\<number2>   -> Würfelt \<number1>d\<number2> / Wird z. B. wie ?1,20 verwendet, um 1d20 zu würfeln (weitere Beispiele wären ?5,6 für 5d6 usw.)
 ### DSA-Modus
 - !\<stat1>  -> 1d20 gegen stat1
