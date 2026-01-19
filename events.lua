@@ -437,7 +437,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 			end
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 		-- end of DSA block
-		
+
 		-- Dice Roll System used in SR mode
 		elseif system == "sr5" and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!kat" and message ~= "!deg" then
 			print("Generic Dice Roll for SR")
@@ -508,7 +508,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 			end
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 		-- end of ShadowRun block
-		
+
 		-- Dice Roll System used in KatharSys mode (aka Degenesis)
 		elseif system == "kat" and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!sr" and message ~= "!sr5" then
 			print("Generic Dice Roll for KatharSys")
@@ -561,18 +561,25 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 			end
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 		--end of KatharSys block
-		
+
 		-- Generic Dice Roll System
 		else
-			if string.sub(message, 1, 1) == "?" then
-				print("Generic Dice Roll")
+			print("Generic Dice Roll")
+			if string.sub(message, 1, 1) == "!" then
+				print("Total")
 				local content = string.sub(message, 2, 99)
 				local values = {}
 				for value in string.gmatch(content, "([^,]+)") do
 					table.insert(values, tonumber(value))
 				end
-				local number = values[1]
-				local die = values[2]		
+				local number = 1
+				local die = 1
+				if values[2] ~= nil then
+					number = values[1]
+					die = values[2]
+				else
+					die = values[1]
+				end
 				response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. number .. "W" .. die .. "\n"
 				print("Rolling " .. number .. "d" .. die)
 				local roll, result = dice.rollDice(number,die)
@@ -582,10 +589,48 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				end		
 				response = response .. " = " .. result
 				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+
+			elseif string.sub(message, 1, 1) == "?" then
+				print("Pool")
+				local content = string.sub(message, 2, 99)
+				local values = {}
+				for value in string.gmatch(content, "([^,]+)") do
+					table.insert(values, tonumber(value))
+				end
+				local successes = 0
+				local ones = 0
+				local number = values[1]
+				local die = values[2]
+				local threshold = values[3]
+
+				if threshold <= die and threshold >= 2 then
+					response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. number .. "W" .. die .. "\n mit einer Erfolgsschwelle von " .. threshold .. "\n"
+					print("Rolling " .. number .. "d" .. die)
+					local roll = dice.rollDice(number, die)
+					for i = 1, number do
+						response = response .. roll[i]
+						if i < number then 
+							response = response .. ", "
+						end
+						if roll[i] >= threshold then
+							successes = successes +1
+						elseif roll[i] == 1 then
+							ones = ones +1
+						else
+						end
+					end
+				elseif threshold == 1 then
+					response = response .. "\n[b]" .. fromName .. "[/b]" .. " macht " .. number .. "Autoerfolge, das braucht man nicht würfeln!\n"
+					print(number .. " auto-successes on D" .. die)
+				else
+					response = response .. "\nMan kann mit einem W" .. die .. " keine " .. threshold .. " erwürfeln!\n"
+					print(threshold .. " is out of range of a D".. die)
+				end
+			else
 			end
 		end
 	end
-	
+
 	-- Powerswitch & Systemswitch
 	if fromUniqueIdentifier == owner then
 		if message == "!on" or message == "!dice" then 
@@ -598,11 +643,12 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 		elseif aktiv then
 			if message == "!help" then
 				response = response .. "\nFolgende Befehle sind funktional \n!dsa - System DSA \n!sr- System Shadowrun \n?[Menge],[Würfel] \n!off - Tool aus\n"
-				response = response .. "\n[b]System DSA[/b] \n![Wert] -> 1w20 Probe\n" 
+				response = response .. "\n[b]System DSA 4.1[/b] \n![Wert] -> 1w20 Probe\n" 
 				response = response .. "![Attributwert],[Attributwert],[Attributwert],[Talentwert],<optional Mod> -> 3w20 Probe\n"
-				response = response .. "\n[b]System Shadowrun[/b] \n![Wert] -> [Wert]w6 Probe\n" 
+				response = response .. "\n[b]System Shadowrun 5[/b] \n![Wert] -> [Wert]w6 Probe\n" 
 				response = response .. "![Wert],e -> Exploding w6 Probe\n"
-				response = response .. "[b]Generisch[/b] \n?[Menge],[Würfel]\n? -> 1w6 \n! -> 1w20"
+				response = response .. "[b]Generischer Modus[/b] \n![Menge],[Würfel],[Bonus] für Summe, ?[Menge],[Würfel],[Erfolgsschwelle] für Poolwürfe\n"
+				response = response .. "[b]Universalwürfe[/b] \n! -> 1w20 \n? -> 1w6 \n!! -> 1w100 \n?? -> 1w66 aka 2w6 als 2-stellige Hexal-Zahl gelesen"
 				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 			elseif message == "!dsa" or message == "!dsa4" then
 				system = "dsa4"
