@@ -20,6 +20,7 @@ All basic commands do still work in both specific modes
 - !on or !dice	-> Enable the Tool
 - !off 			-> Disable the Tool
 - !help 		-> Displays Commands in Chat
+- !farbe,\<color> -> Sets the users color
 - !statcheck 	-> Rolls 100k of every dice and outputs the average
 - !dsa or !dsa4	-> Set the dice rolling system to "DSA 4.1" mode (for the german TTRPG "Das schwarze Auge" in version 4.1)
 - !sr or !sr5	-> Set the dice rolling system to "Shadowrun 5" mode  (for the TTRPG "Shadowrun" in version 5)
@@ -37,6 +38,7 @@ All basic commands do still work in both specific modes
 - !\<stat1>,\<stat2>,\<stat3>,\<skill>,\<modifier> -> modified 3d20 roll used in the DSA system
 - ?\<number> -> rolls Number of D6s & sums them up
 - ?\<number>,\<modifier> -> rolls Number of D6s, sums them up & adds Modifier
+- !treffer -> "Trefferzonenwurf"
 ### ShadowRun Mode
 - !\<pool> -> \<pool>d6 where 5s or 6s count as success and if half or more of the rolls are 1s it counts as glitched
 - !\<pool>,e -> same as above, but with exploding d6 on the 6

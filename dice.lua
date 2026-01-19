@@ -11,38 +11,44 @@ local function rollDice(times, sides)
 	return results, sum
 end
 
+-- Rolls a D4
 local function d4()
 	return rollDice(1,4)
 end
 
+-- Rolls a D6
 local function d6()
 	return rollDice(1,6)
 end
 
+-- Rolls a D8
 local function d8()
 	return rollDice(1,8)
 end
 
+-- Rolls a D10
 local function d10()
 	return rollDice(1,10)
 end
 
+-- Rolls a D12
 local function d12()
 	return rollDice(1,12)
 end
 
+-- Rolls a D20
 local function d20()
 	return rollDice(1,20)
 end
 
+-- Rolls a D100
 local function d100()
 	return rollDice(1,100)
 end
 
+-- Tests a dice for statistical anomalies
 local function averageTest(size,die)
-	print("Hi1")
 	local res,avg = rollDice(size,die)
-	print("hi2")
 	res = avg/size
 	return res
 end
