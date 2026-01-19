@@ -647,8 +647,8 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				response = response .. "![Attributwert],[Attributwert],[Attributwert],[Talentwert],<optional Mod> -> 3w20 Probe\n"
 				response = response .. "\n[b]System Shadowrun 5[/b] \n![Wert] -> [Wert]w6 Probe\n" 
 				response = response .. "![Wert],e -> Exploding w6 Probe\n"
-				response = response .. "[b]Generischer Modus[/b] \n![Menge],[Würfel],[Bonus] für Summe, ?[Menge],[Würfel],[Erfolgsschwelle] für Poolwürfe\n"
-				response = response .. "[b]Universalwürfe[/b] \n! -> 1w20 \n? -> 1w6 \n!! -> 1w100 \n?? -> 1w66 aka 2w6 als 2-stellige Hexal-Zahl gelesen"
+				response = response .. "\n[b]Generischer Modus[/b] \n![Menge],[Würfel],[Bonus] für Summe, ?[Menge],[Würfel],[Erfolgsschwelle] für Poolwürfe\n"
+				response = response .. "\n[b]Universalwürfe[/b] \n! -> 1w20 \n? -> 1w6 \n!! -> 1w100 \n?? -> 1w66 aka 2w6 als 2-stellige Hexal-Zahl gelesen"
 				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 			elseif message == "!dsa" or message == "!dsa4" then
 				system = "dsa4"
