@@ -9,7 +9,7 @@
 		Null-ARC | Fenrir
 
 	Version:
-		Beta 1.4.1
+		Beta 1.4.2
 	
     Disclaimer:
         This software is provided "as is", without warranty of any kind,
@@ -23,12 +23,14 @@
 		- maybe Syntax von Lule übernehmen
 --]===]
 local dice = require("roller/dice")
+local colors = require("roller/colors")
+local dsaFunc = require("roller/dsa")
 local aktiv = false
 local response = ""
 local system = nil
 local OWNER_UNIQUE_ID = nil
 
-local version = "Beta 1.4.1"
+local version = "Beta 1.4.2"
 
 -- Funktion um den Owner der TS Instanz festzulegen
 function detectOwner(serverConnectionHandlerID)
@@ -46,13 +48,20 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 	--print("Message received")    --ENABLE THIS FOR DEBUGGING ONLY
 	--print("Roller: onTextMessageEvent: " .. serverConnectionHandlerID .. " " .. targetMode .. " " .. toID .. " " .. fromID .. " " .. fromName .. " " .. fromUniqueIdentifier .. " " .. message .. " " .. ffIgnored)
 	local owner = detectOwner(serverConnectionHandlerID)
-	
+
 	-- Special Humans get color output
+	--local specialUserColor = colors.specialUserColor(fromUniqueIdentifier, fromName)
+	--if specialUserColor ~= nil then
+	--	response = specialUserColor
+	--else
+	response = colors.getUserColor(fromUniqueIdentifier, fromName)
+	--end
+	--[===[
 	if fromUniqueIdentifier == "wBjkylbtGYAuCFrysq6xlVxNAI4=" or fromName == "Alick | Alex" then
 		print("Gold")
 		response = "[color=#998811]"
 		
-	elseif fromUniqueIdentifier == "yFt2I8EVb8yUb5pGKJsKrGAYkGY=" then --or (fromName == "Null-ARC | Fenrir" or fromName == "Tarek ben Nizar | NARC") then
+	if fromUniqueIdentifier == "yFt2I8EVb8yUb5pGKJsKrGAYkGY=" then --or (fromName == "Null-ARC | Fenrir" or fromName == "Tarek ben Nizar | NARC") then
 		print("Blau")
 		response = "[color=#4848FF]"
 		
@@ -75,6 +84,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 		print("Default Color")
 		response = ""
 	end
+	--]===]
 	
 	-- Simple Rolls from every mode
 	if aktiv then
@@ -128,6 +138,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				local att1 = values[1]
 				local att2 = values[2]
 				local att3 = values[3]
+				local atts = {att1, att2, att3}
 				local skill
 				if values[4] ~= nil then
 					skill = values[4]
@@ -174,27 +185,9 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				local roll1 = roll[1]
 				local roll2 = roll[2]
 				local roll3 = roll[3]
-
-
-				if roll1 == 1 then
-					krit = krit+1
-				end
-				if roll2 == 1 then
-					krit = krit+1
-				end
-				if roll3 == 1 then
-					krit = krit+1
-				end
-
-				if roll1 == 20 then
-					patz = patz+1
-				end
-				if roll2 == 20 then
-					patz = patz+1
-				end
-				if roll3 == 20 then
-					patz = patz+1
-				end
+				local roll = {roll1, roll2, roll3}
+				
+				krit, patz = dsaFunc.countCritsAndPatz(roll)
 				
 				if simple then
 					response = response .. "[" .. roll1 .. "]\n" 
@@ -210,55 +203,24 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				if simple ~= true and talentMod then
 					if change < 0 then
 						print("Probe erleichtert")
+						
 						change = math.abs(change)
 						restSkill = restSkill+change
-						if roll1 > att1 then
-							local result1 = roll1-att1
-							restSkill = restSkill-result1
-						end
-						if roll2 > att2 then
-							local result2 = roll2-att2
-							restSkill = restSkill-result2
-						end
-						if roll3 > att3 then
-							local result3 = roll3-att3
-							restSkill = restSkill-result3
-						end
+						restSkill = dsaFunc.applyAttributes(restSkill,roll,atts)
+						
 						print("Rest Skill: " .. restSkill)
 						print("Att1: " .. att1 .. " Att2: " .. att2 .. " Att3: " .. att3)
 						print("W1: " .. roll1 .. " W2: " .. roll2 .. " W3: " .. roll3)
-						if restSkill >= 0 and restSkill <= skill and krit <=1 and patz <=1 then
-							taps = math.max(1, restSkill)
-							response = response .. "Daher ist die Probe bestanden mit [b]" .. taps .. " TaP* [/b] "
-							print("Mit " .. taps .. " TaP* bestanden")		
-						elseif restSkill >= 0 and restSkill > skill and krit <=1 and patz <=1 then
-							taps = math.max(1, skill)
-							response = response .. "Daher ist die Probe bestanden mit [b]" .. taps .. " TaP* [/b] "
-							print("Mit " .. taps .. " TaP* bestanden")		
-						elseif restSkill < 0 and krit <=1 and patz <=1 then
-							response = response .. "Daher ist die Probe misslungen. [b]\nNotwendige Erleichterung:  [/b]" .. math.abs(restSkill)
-							print("Notwendige Erleichterung: " .. math.abs(restSkill))
-						elseif restSkill >= 0 and restSkill <= skill and krit >1 then
-							taps = math.max(1, restSkill)					
-							response = response .. "[b]KRITISCHER ERFOLG[/b] mit [b]" .. taps .. " TaP* [/b] "
-							print("Krit mit " .. taps .. " TaP* bestanden")		
-						elseif restSkill >= 0 and restSkill > skill and krit >1 then
-							taps = math.max(1, skill)
-							response = response .. "[b]KRITISCHER ERFOLG[/b] mit [b]" .. taps .. " TaP* [/b] "
-							print("Mit " .. taps .. " TaP* bestanden")			
-						elseif restSkill <= 0 and krit >1 then
-							--taps = skill
-							response = response .. "[b]KRITISCHER ERFOLG[/b] mit [b]1 TaP* [/b](Aber eigentlich Misserfolg ¯\\_(ツ)_/¯)"
-							print("Mit 1 TaP* bestanden")		
-						elseif restSkill < 0 and patz > 1 then
-							response = response .. "[b]PATZER.[/b] [b]\nNotwendige Erleichterung:  [/b]" .. math.abs(restSkill)
-							print("Notwendige Erleichterung: " .. math.abs(restSkill))
-						end
+						
+						response = dsaFunc.appendResult(response, restSkill, skill, krit, patz)
+						
 					elseif change > 0 then
 						-- Erschwert um
 						print("Probe erschwert")
 						change = math.abs(change)
 						restSkill = restSkill-change
+						-- This section is kept through refactorings to make the difference in calculations obvious
+						-- This is used for Attributserschwernis
 						if restSkill < 0 then
 							print("Attributserschwernis")
 							att1 = att1+restSkill
@@ -297,51 +259,19 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 							print("W1: " .. roll1 .. " W2: " .. roll2 .. " W3: " .. roll3)
 						else
 							print("Talenterschwernis")
-							if roll1 > att1 then
-								local result1 = roll1-att1
-								restSkill = restSkill-result1
-							end
-							if roll2 > att2 then
-								local result2 = roll2-att2
-								restSkill = restSkill-result2
-							end
-							if roll3 > att3 then
-								local result3 = roll3-att3
-								restSkill = restSkill-result3
-							end
+							
+							restSkill = dsaFunc.applyAttributes(restSkill,roll,atts)
+							
 							print("Rest Skill: " .. restSkill)
 							print("Att1: " .. att1 .. " Att2: " .. att2 .. " Att3: " .. att3)
 							print("W1: " .. roll1 .. " W2: " .. roll2 .. " W3: " .. roll3)
-							if restSkill >= 0 and restSkill <= skill and krit <=1 and patz <=1 then
-								taps = math.max(1, restSkill)
-								response = response .. "Daher ist die Probe bestanden mit [b] " .. taps .. " TaP* [/b] "
-								print("Mit " .. taps .. " TaP* bestanden")		
-							elseif restSkill >= 0 and restSkill > skill and krit <=1 and patz <=1 then
-								taps = math.max(1, skill)
-								response = response .. "Daher ist die Probe bestanden mit [b] " .. taps .. " TaP* [/b] "
-								print("Mit " .. taps .. " TaP* bestanden")		
-							elseif restSkill < 0 and krit <=1 and patz <=1 then
-								response = response .. "Daher ist die Probe misslungen. [b]\nNotwendige Erleichterung:  [/b]" .. math.abs(restSkill)
-								print("Notwendige Erleichterung: " .. math.abs(restSkill))
-							elseif restSkill >= 0 and restSkill <= skill and krit >1 then
-								taps = math.max(1, restSkill)					
-								response = response .. "[b]KRITISCHER ERFOLG[/b] mit [b] " .. taps .. " TaP* [/b] "
-								print("Krit mit " .. taps .. " TaP* bestanden")		
-							elseif restSkill >= 0 and restSkill > skill and krit >1 then
-								taps = math.max(1, skill)
-								response = response .. "[b]KRITISCHER ERFOLG[/b] mit [b] " .. taps .. " TaP* [/b] "
-								print("Mit " .. taps .. " TaP* bestanden")			
-							elseif restSkill <= 0 and krit >1 then
-								--taps = math.max(1, skill)
-								response = response .. "[b]KRITISCHER ERFOLG[/b] mit [b]1 TaP* [/b](Aber eigentlich Misserfolg ¯\\_(ツ)_/¯)"
-								print("Mit 1 TaP* bestanden")		
-							elseif restSkill < 0 and patz > 1 then
-								response = response .. "[b]PATZER.[/b] [b]\nNotwendige Erleichterung:  [/b]" .. math.abs(restSkill)
-								print("Notwendige Erleichterung: " .. math.abs(restSkill))
-							end
+							
+							response = dsaFunc.appendResult(response, restSkill, skill, krit, patz)
 						end
 					end
 					print("-------- \nDSA Probe mit Mod beendet \n--------\n")
+				-- This section is kept through refactorings to make the difference in calculations obvious
+				-- This is used for checks using only 1 die
 				elseif simple then
 					print("Simple Probe")
 					if (roll1 + change) > att1 then
@@ -372,60 +302,28 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 					print("-------- \nDSA Probe beendet \n--------\n")
 				else
 					print("Probe normal")
-					if roll1 > att1 then
-						local result1 = roll1-att1
-						restSkill = restSkill-result1
-					end
-					if roll2 > att2 then
-						local result2 = roll2-att2
-						restSkill = restSkill-result2
-					end
-					if roll3 > att3 then
-						local result3 = roll3-att3
-						restSkill = restSkill-result3
-					end		
+					restSkill = dsaFunc.applyAttributes(restSkill,roll,atts)
 					print("Rest Skill: " .. restSkill)
 					print("Att1: " .. att1 .. " Att2: " .. att2 .. " Att3: " .. att3)
 					print("W1: " .. roll1 .. " W2: " .. roll2 .. " W3: " .. roll3)
-					if restSkill >= 0 and restSkill <= skill and krit <=1 and patz <=1 then
-						taps = math.max(1, restSkill)		
-						response = response .. "Daher ist die Probe bestanden mit [b] " .. taps .. " TaP* [/b] "
-						print("Mit " .. taps .. " TaP* bestanden")		
-					elseif restSkill < 0 and krit <=1 and patz <=1 then
-						response = response .. "Daher ist die Probe misslungen. [b]\nNotwendige Erleichterung:  [/b]" .. math.abs(restSkill)
-					elseif restSkill >= 0 and restSkill <= skill and krit > 1 then
-						taps = math.max(1, restSkill)					
-						response = response .. "[b]KRITISCHER ERFOLG[/b] mit [b] " .. taps .. " TaP* [/b] "
-						print("Krit mit " .. taps .. " TaP* bestanden")		
-					elseif restSkill >= 0 and restSkill > skill and krit >1 then
-						taps = math.max(1, skill)
-						response = response .. "[b]KRITISCHER ERFOLG[/b] mit [b] " .. taps .. " TaP* [/b]"
-						print("Mit " .. taps .. " TaP* bestanden")			
-					elseif restSkill <= 0 and krit >1 then
-						--taps = skill
-						response = response .. "[b]KRITISCHER ERFOLG[/b] mit [b]1 TaP*[/b] (Aber eigentlich Misserfolg ¯\\_(ツ)_/¯)"
-						print("Mit 1 TaP* bestanden")		
-					elseif restSkill < 0 and patz > 1 then
-						response = response .. "[b]PATZER.[/b] [b]\nNotwendige Erleichterung:  [/b]" .. math.abs(restSkill)
-						print("Notwendige Erleichterung: " .. math.abs(restSkill))
-					--print("Notwendige Erleichterung: " .. math.abs(restSkill))
-					end
+					response = dsaFunc.appendResult(response, restSkill, skill, krit, patz)
 					print("-------- \nDSA Probe beendet \n--------\n")
 				end
 				--response = fromName .. " würfelt eine " .. roll1 .. ", " .. roll2 .. ", " .. roll3 .. "]" 
+			-- This function rolls d6 specific for the DSA subsystem
 			elseif string.sub(message, 1, 1) == "?" then
 				local pool = values[1]
 				local mod = values[2]
 				local result = 0
 				response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. pool .. "W6\n"
+				local roll, result = dice.rollDice(pool,6)
 				for i = 1, pool do
-					local roll = dice.d6()[1]
-					response = response .. roll
-					result = result + roll
+					response = response .. roll[i]
 					if i < pool then 
-						response = response .. ", "
-					end
+						response = response .. " + "
+					end					
 				end
+				if mod then response = response .. " + " .. mod end	
 				if mod then
 					print("Ergebnismodifikator: " .. mod .. "\n")
 					result = result + mod
@@ -436,10 +334,11 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 			else
 			end
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+		end
 		-- end of DSA block
 		
 		-- Dice Roll System used in SR mode
-		elseif system == "sr5" and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!kat" and message ~= "!deg" then
+		if system == "sr5" and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!kat" and message ~= "!deg" then
 			print("Generic Dice Roll for SR")
 			local content = string.sub(message, 2, 99)
 			local values = {}
@@ -507,10 +406,11 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				end
 			end
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+		end
 		-- end of ShadowRun block
 		
 		-- Dice Roll System used in KatharSys mode (aka Degenesis)
-		elseif system == "kat" and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!sr" and message ~= "!sr5" then
+		if system == "kat" and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!sr" and message ~= "!sr5" then
 			print("Generic Dice Roll for KatharSys")
 			local content = string.sub(message, 2, 99)
 			local values = {}
@@ -560,35 +460,65 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				response = response .. "\nErfolge: [b]" .. successes .. "[/b] \nTrigger: [b]" .. triggers .. "[/b]"
 			end
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+		end
 		--end of KatharSys block
 		
 		-- Generic Dice Roll System
-		else
-			if string.sub(message, 1, 1) == "?" then
-				print("Generic Dice Roll")
-				local content = string.sub(message, 2, 99)
-				local values = {}
-				for value in string.gmatch(content, "([^,]+)") do
-					table.insert(values, tonumber(value))
-				end
-				local number = values[1]
-				local die = values[2]		
-				response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. number .. "W" .. die .. "\n"
-				print("Rolling " .. number .. "d" .. die)
-				local roll, result = dice.rollDice(number,die)
-				for i = 1, number do					
-					response = response .. roll[i]
-					if i < number then response = response .. " + " end		
-				end		
-				response = response .. " = " .. result
-				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+		if system ~= "dsa4" and string.sub(message, 1, 1) == "?" then
+			print("Generic Dice Roll")
+			local content = string.sub(message, 2, 99)
+			local values = {}
+			for value in string.gmatch(content, "([^,]+)") do
+				table.insert(values, tonumber(value))
 			end
+			local number = values[1]
+			local die = values[2]		
+			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. number .. "W" .. die .. "\n"
+			print("Rolling " .. number .. "d" .. die)
+			local roll, result = dice.rollDice(number,die)
+			for i = 1, number do					
+				response = response .. roll[i]
+				if i < number then response = response .. " + " end		
+			end		
+			response = response .. " = " .. result
+			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 		end
 	end
 	
-	-- Powerswitch & Systemswitch
+	-- Color Picker (Special way of reading the command, dont touch)
+	if aktiv then
+		local colorCmd, colorName = string.match(message:lower(), "^!(farbe),([^%s]+)")
+		if colorCmd then
+			print("Color " .. colorName .. " set for user " .. fromName)
+			response = response .. colors.setUserColor(fromUniqueIdentifier,colorName)
+			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+			--userColor = setUserColor(fromUniqueIdentifier,colorName)
+			--response = response .. userColor
+		end
+	end
+	
+	-- Non 2nd char numerical non only-owner commands
+	if aktiv then
+		if system == "dsa4" and message == "!treffer" then
+			print("Treff")
+			local tz = dice.d20()[1]
+			print("Treffer" .. tz)
+			response = response .. "DSA Trefferzonenwürfel: " .. tz .. "\n Treffer gegen: [b]"
+			if tz == 1 or tz == 3 or tz == 5 then response = response .. "Linkes Bein"
+			elseif tz == 2 or tz == 4 or tz == 6 then response = response .. "Rechtes Bein"
+			elseif tz <= 8 then response = response .. "Bauch"
+			elseif tz ==9 or tz == 11 or tz == 13 then  response = response .. "Schildarm"
+			elseif tz ==10 or tz == 12 or tz == 14 then  response = response .. "Schwertarm"
+			elseif tz <=18 then response = response .. "Brust"
+			elseif tz <=20 then response = response .. "Kopf" 
+			end
+		response = response .. "[/b]"
+		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+		end
+	end
+	-- "Admin" Commands (Powerswitch, Systemswitch)
 	if fromUniqueIdentifier == owner then
-		if message == "!on" or message == "!dice" then 
+		if not aktiv and message == "!on" or message == "!dice" then 
 			aktiv = true
 			print("Tool Aktiv")
 			response = "[b]Tool Aktiv[/b] (" .. version .. ")\n !help -> Zeigt Commands an"
@@ -597,7 +527,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 			print(version)
 		elseif aktiv then
 			if message == "!help" then
-				response = response .. "\nFolgende Befehle sind funktional \n!dsa - System DSA \n!sr- System Shadowrun \n?[Menge],[Würfel] \n!off - Tool aus\n"
+				response = response .. "\nFolgende Befehle sind funktional \n!farbe,[farbe] - Setzt eine Farbe per User\n!dsa - System DSA \n!sr- System Shadowrun \n?[Menge],[Würfel] \n!off - Tool aus\n"
 				response = response .. "\n[b]System DSA[/b] \n![Wert] -> 1w20 Probe\n" 
 				response = response .. "![Attributwert],[Attributwert],[Attributwert],[Talentwert],<optional Mod> -> 3w20 Probe\n"
 				response = response .. "\n[b]System Shadowrun[/b] \n![Wert] -> [Wert]w6 Probe\n" 

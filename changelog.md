@@ -1,5 +1,11 @@
 # Changelog
-
+## Beta 1.5
+Colors for everyone!
+###
+- User can now set colors for themselves
+- Implemented !treffer for DSA ("DSA Trefferzonen")
+- Refactorings to reduce code duplication and optimize readability
+- Fixes some bugs by replacing them with brand new ones.
 ## Beta 1.4.1
 Fixing DSA (as usual for 4.1)
 ### Features

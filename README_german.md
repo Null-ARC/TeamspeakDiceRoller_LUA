@@ -19,6 +19,8 @@ Alle grundlegenden Befehle funktionieren weiterhin in beiden spezifischen Modi
 ### Grundlegende Befehle
 - !on oder !dice	-> Aktiviert das Tool
 - !off   			-> Deaktiviert das Tool
+- !help -> Zeigt die Hilfeseite an
+- !farbe,\<farbe> -> Setzt die Farbe für den User
 - !dsa oder !dsa4	-> Setzt das Würfelsystem in den „DSA 4.1“-Modus (für das deutsche Pen&Paper RPG „Das schwarze Auge“ in der Edition 4.1)
 - !sr oder !sr5		-> Setzt das Würfelsystem in den „ShadowRun 5“-Modus (für das Pen&Paper RPG „Shadowrun“ in der 5. Edition)
 - !kat oder !deg	-> Setzt das Würfelsystem in den "KatharSys"-Modus (für das Pen&Paper RPG "Degenesis" in der Rebirth-Version)
@@ -35,6 +37,7 @@ Alle grundlegenden Befehle funktionieren weiterhin in beiden spezifischen Modi
 - !\<stat1>,\<stat2>,\<stat3>,\<skill>,\<modifier> -> Modifizierter 3d20-Wurf, wie er im DSA-System verwendet wird
 - ?\<anzahl> -> wirft Anzahl an W6ern & summiert sie auf
 - ?\<anzahl>,\<modifikator> -> wirft Anzahl an W6ern, summiert sie auf & addiert Modifikator
+- !treffer -> "Trefferzonenwurf"
 ### ShadowRun-Modus
 - !\<anzahl> -> wirft Anzahl an W6ern, wobei 5en oder 6en als Erfolge zählen und es als Glitch zählt, wenn die Hälfte oder mehr der Würfe 1en sind
 - !\<anzahl>,e -> Wie oben, jedoch mit explodierenden d6 bei einer 6

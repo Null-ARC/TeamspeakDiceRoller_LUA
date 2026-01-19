@@ -6,6 +6,8 @@
 require("ts3init")            -- Required for ts3RegisterModule
 require("roller/events")  -- Forwarded TeamSpeak 3 callbacks
 require("roller/dice")  -- Dice Class
+require("roller/colors")  -- Color Class
+require("roller/dsa") -- DSA functions
 
 local MODULE_NAME = "TeamspeakDiceRoller"
 
