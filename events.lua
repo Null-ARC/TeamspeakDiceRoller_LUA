@@ -487,7 +487,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 	
 	-- Color Picker (Special way of reading the command, dont touch)
 	if aktiv then
-		local colorCmd, colorName = string.match(message:lower(), "^!(farbe),([^%s]+)")
+		local colorCmd, colorName = string.match(message:lower(), "^!(farbe),%s*([^%s]+)")
 		if colorCmd then
 			print("Color " .. colorName .. " set for user " .. fromName)
 			response = response .. colors.setUserColor(fromUniqueIdentifier,colorName)
@@ -584,4 +584,5 @@ end
 
 roller_events = {
 	onTextMessageEvent = onTextMessageEvent,
+
 }
