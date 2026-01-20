@@ -18,6 +18,14 @@ local function specialUserColor(identifier, nickname)
 		print("Petrol")
 		return "[color=#037c6e]"
 		
+	elseif identifier == "oxtuWklz3+nHhcJ/b7GEim6nSss=" then -- Elli
+		print("Violett")
+		return "[color=#8800ff]"
+		
+	elseif identifier == "wf75QK+Js6anWTt0nx2NQ/A27tQ=" then -- J4NU5
+		print("Rot")
+		return "[color=#ff0000]"
+		
 	elseif nickname == "Basti" then
 		print("Teal")
 		return "[color=#025043]"
@@ -37,7 +45,12 @@ local colorMap = {
 	purple = "#ff00ff",
 	petrol = "#037c6e",
 	teal   = "#025043",
-	white  = "#ffffff"
+	white  = "#ffffff",
+	red    = "#ff0000",
+	rot    = "#ff0000",
+	violett= "#8800ff",
+	violet = "#8800ff",
+	bordeaux="#53292a"
 }
 
 local userColors = {}
@@ -90,5 +103,6 @@ local colors = {
 	getUserColor = getUserColor,
 	setUserColor = setUserColor,
 };
+
 
 return colors;
