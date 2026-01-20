@@ -9,7 +9,7 @@
 		Null-ARC | Fenrir
 
 	Version:
-		Beta 1.4.2
+		Beta 1.4.3
 	
     Disclaimer:
         This software is provided "as is", without warranty of any kind,
@@ -30,7 +30,7 @@ local response = ""
 local system = nil
 local OWNER_UNIQUE_ID = nil
 
-local version = "Beta 1.4.2"
+local version = "Beta 1.4.3"
 
 -- Funktion um den Owner der TS Instanz festzulegen
 function detectOwner(serverConnectionHandlerID)
