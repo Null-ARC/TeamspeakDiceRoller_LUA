@@ -91,24 +91,20 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 		if message == "!" then
 			print("-------- \nGeneric D20 \n--------\n")
 			-- Stupid W20 Roll
-			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W20 - "
-			response = response .. "[b]" .. dice.d20()[1] .. "[/b]"
+			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W20 - [b]" .. dice.d20()[1] .. "[/b]"
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 		elseif message == "?" then
 			print("-------- \nGeneric D6 \n--------\n")
-			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W6 - "
-			response = response .. "[b]" .. dice.d6()[1] .. "[/b]"
+			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W6 - [b]" .. dice.d6()[1] .. "[/b]"
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 		elseif message == "!!" then
 			print("-------- \nGeneric D100 \n--------\n")
-			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W100 - "
-			response = response .. "[b]" .. dice.d100()[1] .. "[/b]"
+			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W100 - [b]" .. dice.d100()[1] .. "[/b]"
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 		elseif message == "??" then
 			print("-------- \nGeneric D66 (2D6) \n--------\n")
 			rolls = dice.rollDice(2, 6)
-			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W66 (2W6) - "
-			response = response .. "[b]" .. rolls[1] .. rolls[2] .. "[/b]"
+			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W66 (2W6) - [b]" .. rolls[1] .. rolls[2] .. "[/b]"
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 		else
 		end
@@ -334,11 +330,10 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 			else
 			end
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		end
 		-- end of DSA block
 		
 		-- Dice Roll System used in SR mode
-		if system == "sr5" and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!kat" and message ~= "!deg" then
+		elseif system == "sr5" and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!kat" and message ~= "!deg" then
 			print("Generic Dice Roll for SR")
 			local content = string.sub(message, 2, 99)
 			local values = {}
@@ -406,11 +401,10 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				end
 			end
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		end
 		-- end of ShadowRun block
 		
 		-- Dice Roll System used in KatharSys mode (aka Degenesis)
-		if system == "kat" and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!sr" and message ~= "!sr5" then
+		elseif system == "kat" and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!sr" and message ~= "!sr5" then
 			print("Generic Dice Roll for KatharSys")
 			local content = string.sub(message, 2, 99)
 			local values = {}
@@ -460,27 +454,91 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				response = response .. "\nErfolge: [b]" .. successes .. "[/b] \nTrigger: [b]" .. triggers .. "[/b]"
 			end
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		end
 		--end of KatharSys block
 		
 		-- Generic Dice Roll System
-		if system ~= "dsa4" and string.sub(message, 1, 1) == "?" then
+		else
 			print("Generic Dice Roll")
-			local content = string.sub(message, 2, 99)
-			local values = {}
-			for value in string.gmatch(content, "([^,]+)") do
-				table.insert(values, tonumber(value))
+			if string.sub(message, 1, 1) == "!" then
+				print("Total")
+				local content = string.sub(message, 2, 99)
+				local values = {}
+				for value in string.gmatch(content, "([^,]+)") do
+					table.insert(values, tonumber(value))
+				end
+				local number = 1
+				local die = 1
+				local simple = false
+				if values[2] ~= nil then
+					number = values[1]
+					die = values[2]
+				else
+					die = values[1]
+					simple = true
+				end
+				response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. number .. "W" .. die .. "\n"
+				print("Rolling " .. number .. "d" .. die)
+				local roll, result = dice.rollDice(number,die)
+				if simple then
+					response = response .. "[b]" .. roll[1] .. "[/b]"
+				else
+					for i = 1, number do					
+						response = response .. roll[i]
+						if i < number then response = response .. " + " end		
+					end
+					if values[3] ~= nil then
+						local mod = values[3]
+						result = result + mod
+						if mod >= 0 then
+							response = response .. " + " .. mod
+						else
+							response = response .. " - " .. math.abs(mod)
+						end
+					end
+					response = response .. " = [b]" .. result .. "[/b]"
+				end
+
+			elseif string.sub(message, 1, 1) == "?" then
+				print("Pool")
+				local content = string.sub(message, 2, 99)
+				local values = {}
+				for value in string.gmatch(content, "([^,]+)") do
+					table.insert(values, tonumber(value))
+				end
+				local successes = 0
+				local ones = 0
+				local number = values[1]
+				local die = values[2]
+				local threshold = values[3]
+
+				if threshold <= die and threshold >= 2 then
+					response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. number .. "W" .. die .. "\n mit einer Erfolgsschwelle von " .. threshold .. "\n"
+					print("Rolling " .. number .. "d" .. die)
+					local roll = dice.rollDice(number,die)
+					for i = 1, number do
+						if roll[i] >= threshold then
+							successes = successes +1
+							response = response .. "[b]" .. roll[i] .. "[/b]" 
+						elseif roll[i] == 1 then
+							ones = ones +1
+							response = response .. "[i]" .. roll[i] .. "[/i]"
+						else
+							response = response .. roll[i]
+						end
+						if i < number then 
+							response = response .. ", "
+						end
+					end
+					response = response .. "\n Erfolge: [b]" .. successes .. "[/b]\n Einsen: [b]" .. ones .. "[/b]"
+				elseif threshold == 1 then
+					response = response .. "\n[b]" .. fromName .. "[/b] macht [b]" .. number .. "[/b] Autoerfolge, das braucht man nicht würfeln!\n"
+					print(number .. " auto-successes on D" .. die)
+				else
+					response = response .. "\nMan kann mit einem W" .. die .. " keine " .. threshold .. " erwürfeln!\n"
+					print(threshold .. " is out of range of a D".. die)
+				end
+			else
 			end
-			local number = values[1]
-			local die = values[2]		
-			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. number .. "W" .. die .. "\n"
-			print("Rolling " .. number .. "d" .. die)
-			local roll, result = dice.rollDice(number,die)
-			for i = 1, number do					
-				response = response .. roll[i]
-				if i < number then response = response .. " + " end		
-			end		
-			response = response .. " = " .. result
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 		end
 	end

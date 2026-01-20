@@ -29,7 +29,9 @@ Alle grundlegenden Befehle funktionieren weiterhin in beiden spezifischen Modi
 - ?     -> Würfelt 1W6
 - !!	-> Würfelt 1W100
 - ??	-> Würfelt einen sogenannten "W66" aka 2W6 aber als zweistellige Hexalzahl gelesen
-- ?\<number1>,\<number2>   -> Würfelt \<number1>d\<number2> / Wird z. B. wie ?1,20 verwendet, um 1d20 zu würfeln (weitere Beispiele wären ?5,6 für 5d6 usw.)
+- !<Anzahl>,<Würfel>,<Modifikator> würfelt im Generischen Modus <Anzahl>W<Würfel> & summiert sie auf, samt eines optionalen <Modifikator> (Wird nur 1 Zahl angegeben wird, wird 1 Würfel mit <Anzahl> Seiten gewürfelt)
+- ?<Anzahl>,<Würfel>,<Erfolgsschwelle> würfelt im Generischen Modus <Anzahl>W<Würfel> & zählt alle Würfel mit mindestens <Erfolgsschwelle> als Erfolg (zählt zudem 1en separat)
+### DSA Mode
 ### DSA-Modus
 - !\<stat1>  -> 1d20 gegen stat1
 - !\<stat1>,\<modifier> -> modifizierter 1d20 gegen stat1, wie er im DSA-System verwendet wird

@@ -30,7 +30,8 @@ All basic commands do still work in both specific modes
 - ?		-> Rolls 1d6
 - !!	-> Rolls 1d100
 - ??	-> Rolls a so-called "D66" aka 2d6 but read as a two-digit hexal number
-- ?\<number1>,\<number2>   -> Rolls \<number1>d\<number2> / Is used like ?1,20 to roll 1d20 for example (more example would include ?5,6 for 5d6 and so on)
+- !<number>,<die>,<modifier> in Generic Mode to roll <number>D<die> & add them up together with an optional <modifier> (If only 1 number given, it'll roll 1 Die with <input> sides)
+- ?<number>,<die>,<threshold> in Generic Mode to roll <number>D<die> & count all dice scoring <threshold> or above as sucesses (also counts 1s separately)
 ### DSA Mode
 - !\<stat1>  -> 1d20 against stat1
 - !\<stat1>,\<modifier> -> modified 1d20 against stat1 used in the DSA system

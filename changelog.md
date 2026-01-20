@@ -1,5 +1,12 @@
 # Changelog
-## Beta 1.5
+## Beta 1.4.3
+
+### Features
+- generic rolls mode now supports 2 different types of generic rolls:
+- use !<number>,<die>,<modifier> in Generic Mode to roll <number>D<die> & add them up together with an optional <modifier> (If only 1 number given, it'll roll 1 Die with <input> sides)
+- use ?<number>,<die>,<threshold> in Generic Mode to roll <number>D<die> & count all dice scoring <threshold> or above as sucesses (also counts 1s separately)
+- minor refactoring to open for broader syntax use
+## Beta 1.4.2
 Colors for everyone!
 ###
 - User can now set colors for themselves
