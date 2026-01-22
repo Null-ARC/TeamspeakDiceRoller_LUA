@@ -9,7 +9,7 @@
 		Null-ARC | Fenrir
 
 	Version:
-		Beta 1.4.3
+		Beta 1.4.4
 	
     Disclaimer:
         This software is provided "as is", without warranty of any kind,
@@ -30,7 +30,7 @@ local response = ""
 local system = nil
 local OWNER_UNIQUE_ID = nil
 
-local version = "Beta 1.4.3"
+local version = "Beta 1.4.4"
 
 -- Funktion um den Owner der TS Instanz festzulegen
 function detectOwner(serverConnectionHandlerID)
@@ -173,7 +173,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 					elseif change > 0 then
 						talentMod = true
 						response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Talentprobe erschwert um " .. change .. "\n"
-					else response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Talentprobe \n"
+					else response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Talentprobe\n"
 					end
 				end
 				
@@ -403,9 +403,130 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 		-- end of ShadowRun block
 		
+		elseif system == "coc" then
+			if string.sub(message, 1, 1) == "!" then
+				print("CoC Skill Check")
+				
+				local content = string.sub(message, 2, 99)
+				local values = {}
+				for value in string.gmatch(content, "([^,]+)") do
+					table.insert(values, tonumber(value))
+				end			
+				local skill = values[1]
+				local result = dice.d100()[1]
+				local modifier = values[2]
+				
+				response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt einen W100 gegen " .. skill
+				
+				if modifier ~= nil then
+					if modifier >= 0 then
+						local bonus = math.floor(result/10)
+						response = response .. " mit " .. modifier .. "Bonuswürfeln\n[b]" .. result .. "[/b] Boni: "
+						for i = 1, modifier do
+							local roll = dice.d10()[1]
+							response = response .. roll .. "0"
+							if roll < bonus then
+								bonus = roll
+							end
+							if i < modifier then 
+							response = response .. ", "
+							end
+						end
+						result = (bonus*10) + math.fmod(result,10)
+						response = response .. "\nEndergebnis: [b]" .. result .. "[/b]\n"
+					else
+						local malus = math.floor(result/10)
+						response = response .. " mit " .. modifier .. "Maluswürfeln:\n[b]" .. result .. "[/b] Mali: "
+						for i = 1, modifier do
+							local roll = dice.d10()[1]
+							response = response .. roll .. "0"
+							if roll > malus then
+								malus = roll
+							end
+							if i < modifier then 
+							response = response .. ", "
+							end
+						end
+						result = (malus*10) + math.fmod(result,10)
+						response = response .. "\nEndergebnis: [b]" .. result .. "[/b]\n"
+					end
+				else
+					response = response .. "\n[b]" .. result .. "[/b]\n"
+				end
+				
+				if result == 1 then
+					print("Critical Success!")
+					response = response .. "[b]Kritischer Erfolg![/b]\n"
+				elseif result == 100 or (result >= 96 and skill <50) then
+					print("Fumble!")
+					response = response .. "[b]Patzer![/b]\n"
+				elseif result <= (skill/5) then
+					print("Extreme Success!")
+					response = response .. "[b]Extremer Erfolg![/b]\n"
+				elseif result <= (skill/2) then
+					print("Hard Success!")
+					response = response .. "[b]Schwieriger Erfolg![/b]\n"
+				elseif result <= skill then
+					print("Regular Success!")
+					response = response .. "[b]Erfolg![/b]\n"
+				else
+					print("Failure!")
+					response = response .. "[b]Misserfolg![/b]\n"
+				end
+				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+				
+			elseif string.sub(message, 1, 1) == "?" then
+				print("Generic Dice Roll for CoC")
+				
+				local content = string.sub(message, 2, 99)
+				local values = {}
+				for value in string.gmatch(content, "([^,]+)") do
+					table.insert(values, tonumber(value))
+				end
+				local number = 1
+				local die = 1
+				local simple = false
+				
+				if values[2] ~= nil then
+					number = values[1]
+					die = values[2]
+				else
+					die = values[1]
+					simple = true
+				end
+				response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. number .. "W" .. die .. "\n"
+				print("Rolling " .. number .. "d" .. die)
+				local roll, result = dice.rollDice(number,die)
+
+				if simple then
+					response = response .. "[b]" .. roll[1] .. "[/b]"
+				else
+					for i = 1, number do					
+						response = response .. roll[i]
+						if i < number then
+							response = response .. " + "	
+						end
+					end
+					if values[3] ~= nil then
+						local modifier = values[3]
+						result = result + modifier
+						if mod >= 0 then
+							response = response .. " + " .. modifier
+						else
+							response = response .. " - " .. math.abs(modifier)
+						end
+					end
+					response = response .. " = [b]" .. result .. "[/b]"
+				end
+				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+			else  
+			end
+		-- end of CoC block
+		
 		-- Dice Roll System used in KatharSys mode (aka Degenesis)
 		elseif system == "kat" and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!sr" and message ~= "!sr5" then
 			print("Generic Dice Roll for KatharSys")
+			
 			local content = string.sub(message, 2, 99)
 			local values = {}
 			local successes = 0
@@ -417,6 +538,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				table.insert(values, tonumber(value))
 			end
 			local pool = values[1]
+			
 			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. pool .. "W6"
 			if mod == nil then
 			elseif mod >= 0 then
@@ -486,7 +608,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 						response = response .. roll[i]
 						if i < number then
 							response = response .. " + "
-						end
+						end	
 					end
 					if values[3] ~= nil then
 						local mod = values[3]
@@ -499,6 +621,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 					end
 					response = response .. " = [b]" .. result .. "[/b]"
 				end
+				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 
 			elseif string.sub(message, 1, 1) == "?" then
 				print("Pool")
@@ -539,9 +662,9 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 					response = response .. "\nMan kann mit einem W" .. die .. " keine " .. threshold .. " erwürfeln!\n"
 					print(threshold .. " is out of range of a D".. die)
 				end
+				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 			else
 			end
-			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 		end
 	end
 	
@@ -610,6 +733,11 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				--response = response .. "\n[b]System Shadowrun[/b] \n![Wert] -> [Wert]w6 Probe\n" 
 				--response = response .. "![Wert],e -> Exploding w6 Probe\n"
 				--response = response .. "[b]Generisch[/b] \n?[Menge],[Würfel]"
+				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+			elseif message == "!coc" or message == "!call" then
+				system = "coc"
+				print("System Call of Cthulhu 7th Edition")
+				response = response .. "\n[b]System Call of Cthulhu[/b]"
 				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 			elseif message == "!kat" or message == "!deg" then
 				system = "kat"
