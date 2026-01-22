@@ -484,7 +484,9 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				else
 					for i = 1, number do					
 						response = response .. roll[i]
-						if i < number then response = response .. " + " end		
+						if i < number then
+							response = response .. " + "
+						end
 					end
 					if values[3] ~= nil then
 						local mod = values[3]
