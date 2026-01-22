@@ -421,9 +421,12 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				if modifier ~= nil then
 					if modifier >= 0 then
 						local bonus = math.floor(result/10)
-						response = response .. " mit " .. modifier .. "Bonuswürfeln\n[b]" .. result .. "[/b] Boni: "
+						response = response .. " mit " .. modifier .. " Bonuswürfeln\n[b]" .. result .. "[/b] - Boni: "
 						for i = 1, modifier do
 							local roll = dice.d10()[1]
+							if roll == 10 then
+								roll = 0
+							end
 							response = response .. roll .. "0"
 							if roll < bonus then
 								bonus = roll
@@ -433,12 +436,19 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 							end
 						end
 						result = (bonus*10) + math.fmod(result,10)
+						if result == 0 then
+							result = 100
+						end
 						response = response .. "\nEndergebnis: [b]" .. result .. "[/b]\n"
 					else
 						local malus = math.floor(result/10)
-						response = response .. " mit " .. modifier .. "Maluswürfeln:\n[b]" .. result .. "[/b] Mali: "
+						modifier = math.abs(modifier)
+						response = response .. " mit " .. modifier .. " Maluswürfeln:\n[b]" .. result .. "[/b] - Mali: "
 						for i = 1, modifier do
 							local roll = dice.d10()[1]
+							if roll == 10 then
+								roll = 0
+							end
 							response = response .. roll .. "0"
 							if roll > malus then
 								malus = roll
