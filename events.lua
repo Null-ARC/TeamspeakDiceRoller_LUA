@@ -46,6 +46,7 @@ end
 -- function to respond to messages (bloated as fuck, needs to be tamed)
 local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, fromID, fromName, fromUniqueIdentifier, message, ffIgnored)
 	--print("Message received")    --ENABLE THIS FOR DEBUGGING ONLY
+	if targetMode ~= 2 then return end
 	--print("Roller: onTextMessageEvent: " .. serverConnectionHandlerID .. " " .. targetMode .. " " .. toID .. " " .. fromID .. " " .. fromName .. " " .. fromUniqueIdentifier .. " " .. message .. " " .. ffIgnored)
 	local owner = detectOwner(serverConnectionHandlerID)
 
@@ -586,3 +587,4 @@ roller_events = {
 	onTextMessageEvent = onTextMessageEvent,
 
 }
+
