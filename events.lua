@@ -28,6 +28,7 @@ local dsaFunc = require("roller/dsa")
 local aktiv = false
 local response = ""
 local system = nil
+local memory = nil
 local OWNER_UNIQUE_ID = nil
 
 local version = "Beta 1.4.5"
@@ -109,7 +110,14 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 		else
 		end
 	end
-
+	
+	-- Workaround Solution to create "generic override"
+	if aktiv and string.sub(message, 2, 2) == "(" and string.sub(message, -1) == ")" then
+		message = string.sub(message, 1, 1) .. string.sub(message, 3, -2)
+		memory = system
+		system = nil
+	end
+	
 	if aktiv and tonumber(string.sub(message, 2, 2)) then
 	
 		-- Dice Roll System used in DSA mode
@@ -769,6 +777,10 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				end
 				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 			else
+			end
+			if memory ~= nil then
+				system = memory
+				memory = nil
 			end
 		end
 	end
