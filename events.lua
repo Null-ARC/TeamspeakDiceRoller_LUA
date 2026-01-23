@@ -9,7 +9,7 @@
 		Null-ARC | Fenrir
 
 	Version:
-		Beta 1.4.4
+		Beta 1.4.5
 	
     Disclaimer:
         This software is provided "as is", without warranty of any kind,
@@ -30,7 +30,7 @@ local response = ""
 local system = nil
 local OWNER_UNIQUE_ID = nil
 
-local version = "Beta 1.4.4"
+local version = "Beta 1.4.5"
 
 -- Funktion um den Owner der TS Instanz festzulegen
 function detectOwner(serverConnectionHandlerID)
@@ -114,7 +114,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 	
 		-- Dice Roll System used in DSA mode
 		if system == "dsa4" then --and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!sr" and message ~= "!sr5" and message ~= "!kat" and message ~= "!deg" then
-		--if string.sub(message, 1, 1) == "!" then				
+			--if string.sub(message, 1, 1) == "!" then				
 			print("-------- \nDSA Probe gestartet \n--------\n")
 			local content = string.sub(message, 2, 99)
 			
@@ -330,11 +330,11 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 			else
 			end
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		-- end of DSA block
+			-- end of DSA block
 		
-		-- Dice Roll System used in SR mode
+			-- Dice Roll System used in ShadowRun 5 mode
 		elseif system == "sr5" and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!kat" and message ~= "!deg" then
-			print("Generic Dice Roll for SR")
+			print("Pool Roll for SR")
 			local content = string.sub(message, 2, 99)
 			local values = {}
 			local successes = 0
@@ -401,8 +401,9 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				end
 			end
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		-- end of ShadowRun block
+			-- end of ShadowRun block
 		
+			-- Dice Roll System used in Call of Cthulhu mode
 		elseif system == "coc" then
 			if string.sub(message, 1, 1) == "!" then
 				print("CoC Skill Check")
@@ -531,11 +532,11 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 			else  
 			end
-		-- end of CoC block
+			-- end of CoC block
 		
-		-- Dice Roll System used in KatharSys mode (aka Degenesis)
+			-- Dice Roll System used in KatharSys mode (aka Degenesis)
 		elseif system == "kat" and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!sr" and message ~= "!sr5" then
-			print("Generic Dice Roll for KatharSys")
+			print("Pool Roll for KatharSys")
 			
 			local content = string.sub(message, 2, 99)
 			local values = {}
@@ -586,9 +587,103 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				response = response .. "\nErfolge: [b]" .. successes .. "[/b] \nTrigger: [b]" .. triggers .. "[/b]"
 			end
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		--end of KatharSys block
+			--end of KatharSys block
 		
-		-- Generic Dice Roll System
+			-- Dice Roll System used in Blades In The Dark mode
+		elseif system == "bitd" and string.sub(message, 1, 1) == "!" then
+			print("Blades Skill Check")
+			local content = string.sub(message, 2, 99)
+			local values = {}
+			local result = 1
+			local sixes = 0
+			local notzero = true
+			local six = false
+			
+			for value in string.gmatch(content, "([^,]+)") do
+				table.insert(values, tonumber(value))
+			end
+			local pool = values[1]
+			if pool == 0 then
+				notzero = false
+				pool = 2
+				result = 6
+			end
+			print("Rolling " .. pool .. "D6")
+			response = response .. "\n[b]" .. fromName .. "[/b] würfelt " .. pool .. "W6\n"
+			for i = 1, pool do
+				local roll = dice.d6()[1]
+				if roll > result and notzero then
+					result = roll
+				elseif roll < result and notzero == false then
+					result = roll
+				else
+				end
+				if roll == 6 then
+					sixes = sixes +1
+					six = true
+					response = response .. "[b]"
+				else
+					six = false
+				end
+				response = response .. roll
+				if six then
+					response = response .. "[/b]"
+				end
+				if i < pool then
+					response = response .. ", "
+				end
+			end
+			response = response .. " => [b]" .. result .. "[/b]\n"
+			if sixes >= 2 and notzero then
+				print("Critical Success! - " .. sixes)
+				response = response .. "[b]Kritischer Erfolg![/b] (" .. sixes .. ")"
+			elseif result == 6 then
+				print("Success!")
+				response = response .. "[b]Voller Erfolg![/b]"
+			elseif result >= 4 then
+				print("Partial Success!")
+				response = response .. "[b]Teilerfolg![/b]"
+			else
+				print("Failure!")
+				response = response .. "[b]Fehlschlag![/b]"
+			end
+			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+			-- end of Blades block
+		 
+			-- Dice Roll System used in Powered By The Apocalpyse mode
+		elseif system == "pbta" and string.sub(message, 1, 1) == "!" then
+			print("PbtA Skill Check")
+			local content = string.sub(message, 2, 99)
+			local values = {}
+			local prefix = ""
+			for value in string.gmatch(content, "([^,]+)") do
+				table.insert(values, tonumber(value))
+			end
+			
+			local mod = values[1]
+			local rolls = dice.rollDice(2, 6)
+			local result = rolls[1] + rolls[2] + mod
+			
+			if mod >= 0 then
+				prefix = "+"
+			end
+			print("Rolling 2d6 " .. mod)
+			response = response .. "\n[b]" .. fromName .. "[/b] würfelt 2W6 " .. prefix .. mod .. "\n([b]" .. rolls[1] .. "[/b]) + ([b]" .. rolls[2] .. "[/b]) " .. prefix .. mod .. " = [b]" .. result .. "[/b]\n"
+			
+			if result >= 10 then
+				print("Success!")
+				response = response .. "[b]Voller Erfolg![/b]"
+			elseif result >= 7 then
+				print("Partial Success!")
+				response = response .. "[b]Teilerfolg![/b]"
+			else
+				print("Failure!")
+				response = response .. "[b]Fehlschlag![/b]"
+			end
+			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+			-- end of PbtA block
+		
+			-- Generic Dice Roll System
 		else
 			print("Generic Dice Roll")
 			if string.sub(message, 1, 1) == "!" then
@@ -601,6 +696,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				local number = 1
 				local die = 1
 				local simple = false
+				local prefix = ""
 				if values[2] ~= nil then
 					number = values[1]
 					die = values[2]
@@ -608,9 +704,9 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 					die = values[1]
 					simple = true
 				end
-				response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. number .. "W" .. die .. "\n"
 				print("Rolling " .. number .. "d" .. die)
-				local roll, result = dice.rollDice(number,die)
+				response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. number .. "W" .. die .. "\n"
+				local roll, result = dice.rollDice(number, die)
 				if simple then
 					response = response .. "[b]" .. roll[1] .. "[/b]"
 				else
@@ -624,10 +720,9 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 						local mod = values[3]
 						result = result + mod
 						if mod >= 0 then
-							response = response .. " + " .. mod
-						else
-							response = response .. " - " .. math.abs(mod)
+							prefix = "+"
 						end
+						response = response .. " " .. prefix .. mod
 					end
 					response = response .. " = [b]" .. result .. "[/b]"
 				end
@@ -753,6 +848,16 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				system = "kat"
 				print("System KatharSys aka	Degenesis")
 				response = response .. "\n[b]System KatharSys aka Degenesis[/b]"
+				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+			elseif message == "!bitd" or message == "!blades" then
+				system = "bitd"
+				print("System Blades In The Dark")
+				response = response .. "\n[b]System Blades In The Dark[/b]"
+				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
+			elseif message == "!pbta" or message == "!apoc" then
+				system = "pbta"
+				print("System Powered By The Apocalypse")
+				response = response .. "\n[b]System Powered By The Apocalypse[/b]"
 				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 			elseif message == "!off" then
 				aktiv = false
