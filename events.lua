@@ -9,7 +9,7 @@
 		Null-ARC | Fenrir
 
 	Version:
-		Beta 1.4.5
+		Beta 1.4.6
 	
     Disclaimer:
         This software is provided "as is", without warranty of any kind,
@@ -31,7 +31,7 @@ local system = nil
 local memory = nil
 local OWNER_UNIQUE_ID = nil
 
-local version = "Beta 1.4.5"
+local version = "Beta 1.4.6"
 
 -- Funktion um den Owner der TS Instanz festzulegen
 function detectOwner(serverConnectionHandlerID)
@@ -90,24 +90,41 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 	-- Simple Rolls from every mode
 	if aktiv then
 		if message == "!" then
-			print("-------- \nGeneric D20 \n--------\n")
+			print("-------- \nGeneric D20\n--------\n")
 			-- Stupid W20 Roll
 			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W20 - [b]" .. dice.d20()[1] .. "[/b]"
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 		elseif message == "?" then
-			print("-------- \nGeneric D6 \n--------\n")
+			print("-------- \nGeneric D6\n--------\n")
 			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W6 - [b]" .. dice.d6()[1] .. "[/b]"
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 		elseif message == "!!" then
-			print("-------- \nGeneric D100 \n--------\n")
+			print("-------- \nGeneric D100\n--------\n")
 			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W100 - [b]" .. dice.d100()[1] .. "[/b]"
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 		elseif message == "??" then
-			print("-------- \nGeneric D66 (2D6) \n--------\n")
+			print("-------- \nGeneric D66 (2D6)\n--------\n")
 			rolls = dice.rollDice(2, 6)
 			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W66 (2W6) - [b]" .. rolls[1] .. rolls[2] .. "[/b]"
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		else
+		elseif message == "!help" or message == "!hilfe" then
+			response = response .. "\nFolgende Befehle sind funktional:\n!farbe,[farbe] - Setzt eine Farbe per User\n!(<Input>) oder ?(<Input>) -> Würfelt den <Input> als Generischen Wurf\n!off - Tool aus\n"
+			response = response .. "\n[b]Allgemeine Würfe[/b] (immer gültig)\n! -> 1W20\n? -> 1W6\n!! -> 1W100\n?? -> '1W66'(2W6)-Probe\n"
+			response = response .. "\n[b]unterstützte System-Modi[/b]\n!dsa oder !dsa4 -> DSA 4.1\n!sr oder !sr5 -> ShadowRun 5\n!coc oder !call -> Call of Cthulhu (7. Edition)\n"
+			response = response .. "!kat oder !deg -> KatharSys (aka Degenesis Rebirth)\n!bitd oder !blades -> Blades in the Dark\n!pota oder !apoc -> Powered by the Apocalypse\n"
+			response = response .. "\n[b]System DSA[/b] \n![Wert],[i]<optionaler Modifikator>[/i] -> 1w20 Probe\n" 
+			response = response .. "![Attributwert],[Attributwert],[Attributwert],[Talentwert],[i]<optionaler Modifikator>[/i] -> 3w20 Probe\n"
+			response = response .. "?[Wert],[i][optionaler Modifikator][/i]\n? -> [Wert]W6 [i](+Modifikator falls vorhanden)[/i]\n"
+			response = response .. "\n[b]System Shadowrun[/b] \n![Wert] -> [Wert]W6-Probe\n"
+			response = response .. "![Wert],e -> Explodierende W6 Probe\n"
+			response = response .. "\n[b]System Call of Cthulhu[/b]\n![Wert] -> [Wert]W100-Probe\n" 
+			response = response .. "?[Menge],[Würfel],[i][optionaler Modifikator][/i] -> [Menge]W[Würfel] [i](+Modifikator falls vorhanden)[/i]\n"
+			response = response .. "\n[b]System KatharSys (aka Degenesis)[/b]\n![Wert] -> [Wert]W6-Probe\n"
+			response = response .. "\n[b]System Blades In The Dark[/b]\n![Wert] -> [Wert]W6-Probe\n"
+			response = response .. "\n[b]System Powered By The Apocalypse[/b]\n![Wert] -> 2W6-Probe +[Wert]\n"
+			response = response .. "\n[b]Generische Würfe[/b]\n![Menge],[Würfel],[i]<optionaler Modifikator>[/i] -> [Menge]W[Würfel] [i](+Modifikator falls vorhanden)[/i]\n"
+			response = response .. "?[Menge],[Würfel],[Erfolgsschwelle] -> Würfelt [Menge]W[Würfel] & zählt alle Würfe ab [Erfolgsschwelle] als Erfolge (sowie 1en separat)"
+			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 		end
 	end
 	
@@ -335,7 +352,6 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 				print("Ergebnis: " .. result .. "\n")
 				response = response .. "\n[b]Ergebnis: " .. result .. "[/b]\n" --.. fromUniqueIdentifier .. "\n"
 				print("-------- \nDSA W6er-Probe beendet \n--------\n")
-			else
 			end
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 			-- end of DSA block
@@ -513,7 +529,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 					die = values[1]
 					simple = true
 				end
-				response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. number .. "W" .. die .. "\n"
+				response = response .. "\n[b]" .. fromName .. "[/b] würfelt " .. number .. "W" .. die .. "\n"
 				print("Rolling " .. number .. "d" .. die)
 				local roll, result = dice.rollDice(number,die)
 
@@ -537,8 +553,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 					end
 					response = response .. " = [b]" .. result .. "[/b]"
 				end
-				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-			else  
+				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0) 
 			end
 			-- end of CoC block
 		
@@ -776,7 +791,6 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 					print(threshold .. " is out of range of a D".. die)
 				end
 				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-			else
 			end
 			if memory ~= nil then
 				system = memory
@@ -826,15 +840,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
 			print(version)
 		elseif aktiv then
-			if message == "!help" then
-				response = response .. "\nFolgende Befehle sind funktional \n!farbe,[farbe] - Setzt eine Farbe per User\n!dsa - System DSA \n!sr- System Shadowrun \n?[Menge],[Würfel] \n!off - Tool aus\n"
-				response = response .. "\n[b]System DSA[/b] \n![Wert] -> 1w20 Probe\n" 
-				response = response .. "![Attributwert],[Attributwert],[Attributwert],[Talentwert],<optional Mod> -> 3w20 Probe\n"
-				response = response .. "\n[b]System Shadowrun[/b] \n![Wert] -> [Wert]w6 Probe\n" 
-				response = response .. "![Wert],e -> Exploding w6 Probe\n"
-				response = response .. "[b]Generisch[/b] \n?[Menge],[Würfel]\n? -> 1w6 \n! -> 1w20"
-				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-			elseif message == "!dsa" or message == "!dsa4" then
+			if message == "!dsa" or message == "!dsa4" then
 				system = "dsa4"
 				print("System DSA 4.1")
 				response = response .. "\n[b]System DSA 4.1[/b]"
