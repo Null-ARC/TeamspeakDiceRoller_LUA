@@ -26,7 +26,7 @@ local function specialUserColor(identifier, nickname)
 		print("Rot")
 		return "[color=#ff0000]"
 		
-	elseif nickname == "Basti" then
+	elseif identifier == "tAUPmNZeiIs8wG2xUCo5i0lWzKs=" or nickname == "Basti" then
 		print("Teal")
 		return "[color=#025043]"
 	else
@@ -106,3 +106,4 @@ local colors = {
 
 
 return colors;
+
