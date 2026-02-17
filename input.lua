@@ -97,7 +97,7 @@ local function parseCommand(message)
         print("[TSDiceRoller] parseCommand: message is empty or nil")
         return {}, false
     end
-    
+    local message = message:match("^[^#]*")
     print("[TSDiceRoller] parseCommand() called with message: " .. tostring(message))
     local values = {}
     local allValid = true
@@ -319,3 +319,4 @@ local Input = {
 }
 
 return Input
+
