@@ -113,8 +113,8 @@ local function process(message, fromName, dice)
             simple = true 
             if att2 ~= nil then change = values[2] end
         elseif values[5] ~= nil then 
-            change = values[5]
-            talentMod = true
+            change = values[5]            
+            if change ~= 0 then talentMod = true end
         end
     print("[TSDiceRoller] DSA reporting\ntalentMod=" .. tostring(talentMod) .. "\nsimple=" .. tostring(simple) .. "\nchange=" .. tostring(change))
     print("[TSDiceRoller] DSA reporting\natt1=" .. tostring(att1) .. "\natt2=" .. tostring(att2) .. "\natt3=" .. tostring(att3) .. "\nskill=" .. tostring(skill))
@@ -208,3 +208,4 @@ local DSASystem = {
 }
 
 return DSASystem
+
