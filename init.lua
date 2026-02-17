@@ -1,22 +1,36 @@
---
--- Testmodule initialisation, this script is called via autoload mechanism when the
--- TeamSpeak 3 client starts.
---
+-- Testmodule initialisation for merged roller
 
+print("[TSDiceRoller] Initialization started")
+
+print("[TSDiceRoller] Loading ts3init module")
 require("ts3init")            -- Required for ts3RegisterModule
+print("[TSDiceRoller] ts3init loaded successfully")
+
+print("[TSDiceRoller] Loading events module")
 require("roller/events")  -- Forwarded TeamSpeak 3 callbacks
+print("[TSDiceRoller] Events module loaded successfully")
+
+print("[TSDiceRoller] Loading dice module")
 require("roller/dice")  -- Dice Class
+print("[TSDiceRoller] Dice module loaded successfully")
+
+print("[TSDiceRoller] Loading colors module")
 require("roller/colors")  -- Color Class
-require("roller/dsa") -- DSA functions
+print("[TSDiceRoller] Colors module loaded successfully")
+
+print("[TSDiceRoller] Loading dsa module")
+require("roller/systems/dsa") -- DSA functions
+print("[TSDiceRoller] DSA module loaded successfully")
 
 local MODULE_NAME = "TeamspeakDiceRoller"
+print("[TSDiceRoller] Module name set to: " .. tostring(MODULE_NAME))
 
--- Define which callbacks you want to receive in your module. Callbacks not mentioned
--- here will not be called. To avoid function name collisions, your callbacks should
--- be put into an own package.
+print("[TSDiceRoller] Registering event handlers")
 local registeredEvents = {
-	onTextMessageEvent = roller_events.onTextMessageEvent,
+    onTextMessageEvent = roller_events.onTextMessageEvent,
 }
+print("[TSDiceRoller] Event handler registration table created")
+print("[TSDiceRoller] Calling ts3RegisterModule with module name: " .. tostring(MODULE_NAME))
 
--- Register your callback functions with a unique module name.
 ts3RegisterModule(MODULE_NAME, registeredEvents)
+print("[TSDiceRoller] Initialization completed successfully")

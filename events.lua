@@ -1,506 +1,134 @@
---[===[
-    Roller Skript
-    ------------------
-    A simple and reusable Lua-based dice rolling utility.
-    Designed for online roleplaying using Teamspeak 3
+-- Refactored events.lua: flattened dispatcher and system-specific modules
+print("[TSDiceRoller] Events module loading - requiring dependencies")
 
-      Authors:
-        Alick | Alex // DK_Alick
-		Null-ARC | Fenrir
-
-	Version:
-		Beta 1.4.2
-	
-    Disclaimer:
-        This software is provided "as is", without warranty of any kind,
-        express or implied. The author is not liable for any damages
-        arising from the use of this software.
-		
-	ToDo:
-		- Nutzbare Code Kommentare
-		- Bessere Zufallsmethoden
-		- OOP
-		- maybe Syntax von Lule übernehmen
---]===]
+print("[TSDiceRoller] Events module: attempting to require roller/dice")
 local dice = require("roller/dice")
+print("[TSDiceRoller] Events module: dice module required successfully")
+
+print("[TSDiceRoller] Events module: attempting to require roller/colors")
 local colors = require("roller/colors")
-local dsaFunc = require("roller/dsa")
+print("[TSDiceRoller] Events module: colors module required successfully")
+
+print("[TSDiceRoller] Events module: attempting to require roller/input")
+local input = require("roller/input")  -- Input sanitization and validation module
+print("[TSDiceRoller] Events module: input module required successfully")
+
+print("[TSDiceRoller] Events module: attempting to require system modules")
+local systems = {
+    dsa4 = require("roller/systems/dsa"),
+    sr5 = require("roller/systems/sr5"),
+    coc = require("roller/systems/coc"),
+    kat = require("roller/systems/kat"),
+    bitd = require("roller/systems/bitd"),
+    pbta = require("roller/systems/pbta"),
+    generic = require("roller/systems/generic"),
+}
+print("[TSDiceRoller] Events module: all system modules required successfully")
+
 local aktiv = false
 local response = ""
 local system = nil
+local memory = nil
 local OWNER_UNIQUE_ID = nil
 
-local version = "Beta 1.4.2"
+local version = "1.0.0"
 
--- Funktion um den Owner der TS Instanz festzulegen
 function detectOwner(serverConnectionHandlerID)
-	if OWNER_UNIQUE_ID ~= nil then
+    print("[TSDiceRoller] detectOwner() called with serverConnectionHandlerID=" .. tostring(serverConnectionHandlerID))
+    if OWNER_UNIQUE_ID ~= nil then
+        print("[TSDiceRoller] detectOwner: cached OWNER_UNIQUE_ID returned: " .. tostring(OWNER_UNIQUE_ID))
         return OWNER_UNIQUE_ID
     end
+    print("[TSDiceRoller] detectOwner: fetching client ID")
     local myClientID = ts3.getClientID(serverConnectionHandlerID)
+    print("[TSDiceRoller] detectOwner: myClientID=" .. tostring(myClientID))
     local uid = ts3.getClientVariableAsString(serverConnectionHandlerID, myClientID, ts3defs.ClientProperties.CLIENT_UNIQUE_IDENTIFIER)
+    print("[TSDiceRoller] detectOwner: determined owner UID=" .. tostring(uid))
     return uid
-    
 end
 
--- function to respond to messages (bloated as fuck, needs to be tamed)
+local function sendResponse(serverConnectionHandlerID, resp)
+    print("[TSDiceRoller] sendResponse() called with serverConnectionHandlerID=" .. tostring(serverConnectionHandlerID) .. ", resp length=" .. tostring(#(resp or "")))
+    if resp and resp ~= "" then
+        print("[TSDiceRoller] sendResponse: sending message to channel")
+        ts3.requestSendChannelTextMsg(serverConnectionHandlerID, resp, 0)
+    else
+        print("[TSDiceRoller] sendResponse: response empty or nil, skipping send")
+    end
+end
+
+local function handleSimpleRolls(serverConnectionHandlerID, message, fromName)
+    print("[TSDiceRoller] handleSimpleRolls() called, message=" .. tostring(message) .. ", fromName=" .. tostring(fromName))
+    -- Normalize message for comparison (trim whitespace)
+    local normalizedMsg = input.normalize(message, false)
+    print("[TSDiceRoller] handleSimpleRolls: normalized message=" .. tostring(normalizedMsg))
+    
+    -- Handle simple single-character rolls (with robust whitespace handling)
+    if normalizedMsg == "!" then
+        print("[TSDiceRoller] handleSimpleRolls: matched single '!' (1W20 roll)")
+        local resp = "\n[b]" .. fromName .. "[/b] würfelt 1W20 - [b]" .. dice.d20()[1] .. "[/b]"
+        sendResponse(serverConnectionHandlerID, response .. resp)
+        return true
+    elseif normalizedMsg == "?" then
+        print("[TSDiceRoller] handleSimpleRolls: matched single '?' (1W6 roll)")
+        local resp = "\n[b]" .. fromName .. "[/b] würfelt 1W6 - [b]" .. dice.d6()[1] .. "[/b]"
+        sendResponse(serverConnectionHandlerID, response .. resp)
+        return true
+    elseif normalizedMsg == "!!" then
+        print("[TSDiceRoller] handleSimpleRolls: matched '!!' (1W100 roll)")
+        local resp = "\n[b]" .. fromName .. "[/b] würfelt 1W100 - [b]" .. dice.d100()[1] .. "[/b]"
+        sendResponse(serverConnectionHandlerID, response .. resp)
+        return true
+    elseif normalizedMsg == "??" then
+        print("[TSDiceRoller] handleSimpleRolls: matched '??' (2W6 roll)")
+        local rolls = dice.rollDice(2,6)
+        local resp = "\n[b]" .. fromName .. "[/b] würfelt 1W66 (2W6) - [b]" .. rolls[1] .. rolls[2] .. "[/b]"
+        sendResponse(serverConnectionHandlerID, response .. resp)
+        return true
+    end
+    print("[TSDiceRoller] handleSimpleRolls: no simple roll pattern matched")
+    return false
+end
+
 local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, fromID, fromName, fromUniqueIdentifier, message, ffIgnored)
-	--print("Message received")    --ENABLE THIS FOR DEBUGGING ONLY
-	if targetMode ~= 2 then return end
-	--print("Roller: onTextMessageEvent: " .. serverConnectionHandlerID .. " " .. targetMode .. " " .. toID .. " " .. fromID .. " " .. fromName .. " " .. fromUniqueIdentifier .. " " .. message .. " " .. ffIgnored)
-	local owner = detectOwner(serverConnectionHandlerID)
+    print("[TSDiceRoller] onTextMessageEvent() called")
+    print("[TSDiceRoller] onTextMessageEvent params - targetMode=" .. tostring(targetMode) .. ", fromName=" .. tostring(fromName) .. ", message=" .. tostring(message))
+    
+    -- Validate and normalize input
+    local isValid, errMsg = input.validateInput(message)
+    print("[TSDiceRoller] onTextMessageEvent: input validation result - isValid=" .. tostring(isValid) .. ", error=" .. tostring(errMsg))
+    if not isValid then
+        print("[TSDiceRoller] onTextMessageEvent: returning - invalid input")
+        return  -- Silently ignore invalid input (nil, empty, or whitespace-only)
+    end
+    
+    if targetMode ~= 2 then 
+        print("[TSDiceRoller] onTextMessageEvent: returning - targetMode not 2 (targetMode=" .. tostring(targetMode) .. ")")
+        return 
+    end
+    local owner = detectOwner(serverConnectionHandlerID)
+    print("[TSDiceRoller] onTextMessageEvent: owner detected as " .. tostring(owner) .. ", fromUniqueIdentifier=" .. tostring(fromUniqueIdentifier))
+    response = colors.getUserColor(fromUniqueIdentifier, fromName)
+    
+    -- Normalize message for case-insensitive processing
+    local normalizedMsg = input.normalize(message, true)
+    print("[TSDiceRoller] onTextMessageEvent: normalized message (lowercase)=" .. tostring(normalizedMsg))
 
-	-- Special Humans get color output
-	--local specialUserColor = colors.specialUserColor(fromUniqueIdentifier, fromName)
-	--if specialUserColor ~= nil then
-	--	response = specialUserColor
-	--else
-	response = colors.getUserColor(fromUniqueIdentifier, fromName)
-	--end
-	--[===[
-	if fromUniqueIdentifier == "wBjkylbtGYAuCFrysq6xlVxNAI4=" or fromName == "Alick | Alex" then
-		print("Gold")
-		response = "[color=#998811]"
-		
-	if fromUniqueIdentifier == "yFt2I8EVb8yUb5pGKJsKrGAYkGY=" then --or (fromName == "Null-ARC | Fenrir" or fromName == "Tarek ben Nizar | NARC") then
-		print("Blau")
-		response = "[color=#4848FF]"
-		
-	elseif fromUniqueIdentifier == "Iq7EpOG3uYOh50FnZLSD2Plmmlc=" or fromName == "Sir Kilmawa | Richard" then
-		print("Grün")
-		response = "[color=#116611]"
-		
-	elseif fromUniqueIdentifier == "HigFMJk7fVRuTBuV84J6vG+Zhow=" or fromName == "Dr. Clean// Protheos | David" then
-		print("Emperor's Children Lila")
-		response = "[color=#ff00ff]"
-		
-	elseif fromUniqueIdentifier == "2YVwwiIafvcpx8HCDN+V7sSm5k8=" then --or (fromName == "Engelsleiche" or fromName == "Jadira saba Nagar" or fromName == "Cassandra vom Düsterhain") then
-		print("Petrol")
-		response = "[color=#037c6e]"
-		
-	elseif fromName == "Basti" then
-		print("Teal")
-		response = "[color=#025043]"
-	else
-		print("Default Color")
-		response = ""
-	end
-	--]===]
-	
-	-- Simple Rolls from every mode
-	if aktiv then
-		if message == "!" then
-			print("-------- \nGeneric D20 \n--------\n")
-			-- Stupid W20 Roll
-			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W20 - "
-			response = response .. "[b]" .. dice.d20()[1] .. "[/b]"
-			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		elseif message == "?" then
-			print("-------- \nGeneric D6 \n--------\n")
-			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W6 - "
-			response = response .. "[b]" .. dice.d6()[1] .. "[/b]"
-			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		elseif message == "!!" then
-			print("-------- \nGeneric D100 \n--------\n")
-			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W100 - "
-			response = response .. "[b]" .. dice.d100()[1] .. "[/b]"
-			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		elseif message == "??" then
-			print("-------- \nGeneric D66 (2D6) \n--------\n")
-			rolls = dice.rollDice(2, 6)
-			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt 1W66 (2W6) - "
-			response = response .. "[b]" .. rolls[1] .. rolls[2] .. "[/b]"
-			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		else
-		end
-	end
-
-	if aktiv and tonumber(string.sub(message, 2, 2)) then
-	
-		-- Dice Roll System used in DSA mode
-		if system == "dsa4" then --and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!sr" and message ~= "!sr5" and message ~= "!kat" and message ~= "!deg" then
-		--if string.sub(message, 1, 1) == "!" then				
-			print("-------- \nDSA Probe gestartet \n--------\n")
-			local content = string.sub(message, 2, 99)
-			
-			local values = {}
-			local talentMod = false
-			local simple = false
-			local krit = 0
-			local patz = 0
-			local change = 0
-			
-			for value in string.gmatch(content, "([^,]+)") do
-				table.insert(values, tonumber(value))
-			end
-				
-			if string.sub(message, 1, 1) == "!" then
-				
-				local att1 = values[1]
-				local att2 = values[2]
-				local att3 = values[3]
-				local atts = {att1, att2, att3}
-				local skill
-				if values[4] ~= nil then
-					skill = values[4]
-				else
-					skill = 0
-				end
-				
-				if att3 == nil then
-					simple = true
-					if att2 ~= nil then
-						change = values[2]
-					end
-				elseif values[5] ~= nil then
-					change = values[5]
-				else
-				end
-				
-				print("Attribut 1: " .. att1)
-				if simple ~= true then
-					print("Attribut 2: " .. att2)
-					print("Attribut 3: " .. att3)
-					print("TaW: " .. skill)
-				end
-				
-				if simple then
-					if change < 0 then
-						response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Eigenschaftsprobe erleichtert um " .. math.abs(change) .. "\n"
-					elseif change > 0 then
-						response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Eigenschaftsprobe erschwert um " .. change .. "\n"
-					else response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Eigenschaftsprobe \n"
-					end
-				else
-					if change < 0 then
-						talentMod = true
-						response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Talentprobe erleichtert um " .. math.abs(change) .. "\n"
-					elseif change > 0 then
-						talentMod = true
-						response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Talentprobe erschwert um " .. change .. "\n"
-					else response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt eine DSA Talentprobe \n"
-					end
-				end
-				
-				local roll = dice.rollDice(3,20)
-				local roll1 = roll[1]
-				local roll2 = roll[2]
-				local roll3 = roll[3]
-				local roll = {roll1, roll2, roll3}
-				
-				krit, patz = dsaFunc.countCritsAndPatz(roll)
-				
-				if simple then
-					response = response .. "[" .. roll1 .. "]\n" 
-					if roll1 == 1 or roll1 == 20 then
-						response = response .. "Bestätigungswurf: [" .. roll2 .. "]\n"
-					end
-				else
-					response = response .. " Die Würfe sind: [" .. roll1 .. ", " .. roll2 .. ", " .. roll3 .. "]\n" 
-				end
-			
-				local restSkill = skill
-				
-				if simple ~= true and talentMod then
-					if change < 0 then
-						print("Probe erleichtert")
-						
-						change = math.abs(change)
-						restSkill = restSkill+change
-						restSkill = dsaFunc.applyAttributes(restSkill,roll,atts)
-						
-						print("Rest Skill: " .. restSkill)
-						print("Att1: " .. att1 .. " Att2: " .. att2 .. " Att3: " .. att3)
-						print("W1: " .. roll1 .. " W2: " .. roll2 .. " W3: " .. roll3)
-						
-						response = dsaFunc.appendResult(response, restSkill, skill, krit, patz)
-						
-					elseif change > 0 then
-						-- Erschwert um
-						print("Probe erschwert")
-						change = math.abs(change)
-						restSkill = restSkill-change
-						-- This section is kept through refactorings to make the difference in calculations obvious
-						-- This is used for Attributserschwernis
-						if restSkill < 0 then
-							print("Attributserschwernis")
-							att1 = att1+restSkill
-							att2 = att2+restSkill
-							att3 = att3+restSkill
-							if roll1 <= att1 and roll2 <= att2 and roll3 <= att3 and krit <=1 and patz <=1 then
-								response = response .. "Daher ist die Probe bestanden mit[/b] [b]1 TaP*[/b]"
-							elseif roll1 <= att1 and roll2 <= att2 and roll3 <= att3 and krit >1 then
-								response = response .. "[b]KRITISCHER ERFOLG mit[/b] [b] 1 TaP*[/b]"
-							else
-								restSkill = 0
-								if roll1 > att1 then
-									local result1 = att1-roll1
-									restSkill = restSkill+result1
-								end
-								if roll2 > att2 then
-									local result2 = att2-roll2
-									restSkill = restSkill+result2
-								end
-								if roll3 > att3 then
-									local result3 = att3-roll3
-									restSkill = restSkill+result3
-								end
-								if restSkill < 0 and krit <=1 and patz <=1 then
-									response = response .. "Daher ist die Probe misslungen. [b]\nNotwendige Erleichterung:  [/b]" .. math.abs(restSkill)
-									print("Notwendige Erleichterung: " .. math.abs(restSkill))
-								elseif restSkill < 0 and krit >1 then
-									response = response .. "[b]KRITISCHER ERFOLG mit[/b] [b] 1 TaP* [/b](Aber eigentlich Misserfolg ¯\\_(ツ)_/¯)"
-								elseif restSkill < 0 and patz >1 then
-									response = response .. "[b]PATZER.[/b] [b]\nNotwendige Erleichterung:  [/b]" .. math.abs(restSkill)
-									print("Notwendige Erleichterung: " .. math.abs(restSkill))
-								end
-							end
-							print("Rest Skill: " .. restSkill)
-							print("Att1: " .. att1 .. " Att2: " .. att2 .. " Att3: " .. att3)
-							print("W1: " .. roll1 .. " W2: " .. roll2 .. " W3: " .. roll3)
-						else
-							print("Talenterschwernis")
-							
-							restSkill = dsaFunc.applyAttributes(restSkill,roll,atts)
-							
-							print("Rest Skill: " .. restSkill)
-							print("Att1: " .. att1 .. " Att2: " .. att2 .. " Att3: " .. att3)
-							print("W1: " .. roll1 .. " W2: " .. roll2 .. " W3: " .. roll3)
-							
-							response = dsaFunc.appendResult(response, restSkill, skill, krit, patz)
-						end
-					end
-					print("-------- \nDSA Probe mit Mod beendet \n--------\n")
-				-- This section is kept through refactorings to make the difference in calculations obvious
-				-- This is used for checks using only 1 die
-				elseif simple then
-					print("Simple Probe")
-					if (roll1 + change) > att1 then
-						local erlei = (roll1 + change) - att1
-						if roll1 == 20 then
-							if (roll2 + change) > att1 then
-								response = response .. "PATZER. [b]\nNotwendige Erleichterung:  [/b]" .. erlei
-							else
-								response = response .. "Misslungen. [b]\nNotwendige Erleichterung:  [/b]" .. erlei
-							end	
-						else
-							response = response .. "Misslungen. [b]\nNotwendige Erleichterung:  [/b]" .. erlei
-						end			
-					else
-						local erschw = att1 - (roll1 + change)	
-						if roll1 == 1 then
-							if (roll2 + change) < att1 then
-								response = response .. "KRITISCHER ERFOLG. [b]\nMaximale Erschwernis:  [/b]" ..  erschw
-							else
-								response = response .. "Bestanden. [b]\nMaximale Erschwernis:  [/b]" ..  erschw
-							end	
-						else
-							response = response .. "Bestanden. [b]\nMaximale Erschwernis:  [/b]" ..  erschw
-						end	
-					end
-					print("Att1: " .. att1)
-					print("W1: " .. roll1)
-					print("-------- \nDSA Probe beendet \n--------\n")
-				else
-					print("Probe normal")
-					restSkill = dsaFunc.applyAttributes(restSkill,roll,atts)
-					print("Rest Skill: " .. restSkill)
-					print("Att1: " .. att1 .. " Att2: " .. att2 .. " Att3: " .. att3)
-					print("W1: " .. roll1 .. " W2: " .. roll2 .. " W3: " .. roll3)
-					response = dsaFunc.appendResult(response, restSkill, skill, krit, patz)
-					print("-------- \nDSA Probe beendet \n--------\n")
-				end
-				--response = fromName .. " würfelt eine " .. roll1 .. ", " .. roll2 .. ", " .. roll3 .. "]" 
-			-- This function rolls d6 specific for the DSA subsystem
-			elseif string.sub(message, 1, 1) == "?" then
-				local pool = values[1]
-				local mod = values[2]
-				local result = 0
-				response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. pool .. "W6\n"
-				local roll, result = dice.rollDice(pool,6)
-				for i = 1, pool do
-					response = response .. roll[i]
-					if i < pool then 
-						response = response .. " + "
-					end					
-				end
-				if mod then response = response .. " + " .. mod end	
-				if mod then
-					print("Ergebnismodifikator: " .. mod .. "\n")
-					result = result + mod
-				end
-				print("Ergebnis: " .. result .. "\n")
-				response = response .. "\n[b]Ergebnis: " .. result .. "[/b]\n" --.. fromUniqueIdentifier .. "\n"
-				print("-------- \nDSA W6er-Probe beendet \n--------\n")
-			else
-			end
-			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		end
-		-- end of DSA block
-		
-		-- Dice Roll System used in SR mode
-		if system == "sr5" and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!kat" and message ~= "!deg" then
-			print("Generic Dice Roll for SR")
-			local content = string.sub(message, 2, 99)
-			local values = {}
-			local successes = 0
-			local ones = 0
-			local glitched = false
-			local edge = false
-			for value in string.gmatch(content, "([^,]+)") do
-				if value == "e" then edge = true end
-				table.insert(values, tonumber(value))
-			end
-			local pool = values[1]
-			if edge ~= true then
-				response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. pool .. "W6\n"
-				for i = 1, pool do
-					local roll = dice.d6()[1]
-					response = response .. roll
-					if i < pool then 
-						response = response .. ", "
-					end		
-					if roll >= 5 then
-						successes = successes+1
-					end
-					if roll == 1 then
-						ones = ones+1
-					end
-				end
-				if ones >= math.ceil(pool/2) then
-					glitched = true
-				end
-				if glitched then
-					response = response .. "[b] \nGLITCHED[/b] \nErfolge: [b]" .. successes .. "[/b]"
-				else
-					response = response .. "\nErfolge: [b]" .. successes .. "[/b]"
-				end
-			else
-				response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. pool .. "W6 mit [b]Edge[/b]\n"
-				local i = 1
-				local diceToRoll = pool
-				while i <= diceToRoll do
-					local roll = dice.d6()[1]
-					response = response .. roll						
-					if roll >= 5 then
-						successes = successes+1
-					end
-					if roll == 6 then
-						diceToRoll = diceToRoll+1
-					end
-					if i < diceToRoll then 
-						response = response .. ", "
-					end			
-					if roll == 1 and i <= pool then
-						ones = ones+1
-					end
-					i = i+1
-				end
-				response = response .. "\n" .. diceToRoll-pool .. " Würfel explodiert"
-				if ones >= math.ceil(pool/2) then
-					glitched = true
-				end
-				if glitched then
-					response = response .. "[b] \nGLITCHED[/b] \nErfolge: [b]" .. successes .. "[/b]"
-				else
-					response = response .. "\nErfolge:[b]" .. successes .. "[/b]"
-				end
-			end
-			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		end
-		-- end of ShadowRun block
-		
-		-- Dice Roll System used in KatharSys mode (aka Degenesis)
-		if system == "kat" and string.sub(message, 1, 1) == "!" then --and aktiv and tonumber(string.sub(message, 2, 2)) then --and message ~= "!off" and message ~= "!dsa" and message ~= "!dsa4" and message ~= "!sr" and message ~= "!sr5" then
-			print("Generic Dice Roll for KatharSys")
-			local content = string.sub(message, 2, 99)
-			local values = {}
-			local successes = 0
-			local ones = 0
-			local triggers = 0
-			local botched = false
-			local edge = false
-			for value in string.gmatch(content, "([^,]+)") do
-				table.insert(values, tonumber(value))
-			end
-			local pool = values[1]
-			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. pool .. "W6"
-			if mod == nil then
-			elseif mod >= 0 then
-				response = response .. "+" .. mod
-			else
-				response = response .. mod
-			end
-			response = response .. "\n"
-			if pool > 12 then
-				successes = (pool - 12)
-				pool = 12
-			end
-			for i = 1, pool do
-				local roll = dice.d6()[1]
-				response = response .. roll
-				if i < pool then 
-					response = response .. ", "
-				end		
-				if roll >= 4 then
-					successes = successes+1
-				end
-				if roll == 6 then
-					triggers = triggers+1
-				end
-				if roll == 1 then
-					ones = ones+1
-				end
-			end
-			if ones > successes then
-				botched = true
-			end
-			if botched then
-				response = response .. "[b] \nPatzer![/b] \nErfolge: [b]" .. successes .. "[/b] \nTrigger: [b]" .. triggers .. "[/b]"
-			else
-				response = response .. "\nErfolge: [b]" .. successes .. "[/b] \nTrigger: [b]" .. triggers .. "[/b]"
-			end
-			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		end
-		--end of KatharSys block
-		
-		-- Generic Dice Roll System
-		if system ~= "dsa4" and string.sub(message, 1, 1) == "?" then
-			print("Generic Dice Roll")
-			local content = string.sub(message, 2, 99)
-			local values = {}
-			for value in string.gmatch(content, "([^,]+)") do
-				table.insert(values, tonumber(value))
-			end
-			local number = values[1]
-			local die = values[2]		
-			response = response .. "\n[b]" .. fromName .. "[/b]" .. " würfelt " .. number .. "W" .. die .. "\n"
-			print("Rolling " .. number .. "d" .. die)
-			local roll, result = dice.rollDice(number,die)
-			for i = 1, number do					
-				response = response .. roll[i]
-				if i < number then response = response .. " + " end		
-			end		
-			response = response .. " = " .. result
-			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		end
-	end
-	
-	-- Color Picker (Special way of reading the command, dont touch)
-	if aktiv then
-		local colorCmd, colorName = string.match(message:lower(), "^!(farbe),%s*([^%s]+)")
-		if colorCmd then
-			print("Color " .. colorName .. " set for user " .. fromName)
-			response = response .. colors.setUserColor(fromUniqueIdentifier,colorName)
-			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-			--userColor = setUserColor(fromUniqueIdentifier,colorName)
-			--response = response .. userColor
-		end
-	end
-	
-	-- Non 2nd char numerical non only-owner commands
-	if aktiv then
-		if system == "dsa4" and message == "!treffer" then
+    -- Simple generic rolls & help when active
+    if aktiv then
+        print("[TSDiceRoller] onTextMessageEvent: tool is ACTIVE")
+        if handleSimpleRolls(serverConnectionHandlerID, message, fromName) then 
+            print("[TSDiceRoller] onTextMessageEvent: simple roll handled, returning")
+            return 
+        end
+        if input.commandMatchesAny(message, {"!help", "!hilfe"}) then
+            print("[TSDiceRoller] onTextMessageEvent: help command detected")
+            local help = "\nFolgende Befehle sind funktional:\n!farbe,[farbe] - Setzt eine Farbe per User\n!(<Input>) oder ?(<Input>) -> Würfelt den <Input> als Generischen Wurf\n!off - Tool aus\n"
+            help = help .. "\n[b]Allgemeine Würfe[/b] (immer gültig)\n! -> 1W20\\n? -> 1W6\\n!! -> 1W100\n?? -> '1W66'(2W6)-Probe\n"
+            sendResponse(serverConnectionHandlerID, response .. help)
+            return
+        end
+        if input.commandMatchesAny(message, {"!treffer", "!treff"}) then
 			print("Treff")
 			local tz = dice.d20()[1]
 			print("Treffer" .. tz)
@@ -513,78 +141,134 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
 			elseif tz <=18 then response = response .. "Brust"
 			elseif tz <=20 then response = response .. "Kopf" 
 			end
-		response = response .. "[/b]"
-		ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-		end
-	end
-	-- "Admin" Commands (Powerswitch, Systemswitch)
-	if fromUniqueIdentifier == owner then
-		if not aktiv and message == "!on" or message == "!dice" then 
-			aktiv = true
-			print("Tool Aktiv")
-			response = "[b]Tool Aktiv[/b] (" .. version .. ")\n !help -> Zeigt Commands an"
-			--response = "[b]Tool Aktiv[/b]\nFolgende Befehle sind funktional \n!dsa - System DSA \n!sr- System Shadowrun \n?[Menge],[Würfel] \n!off - Tool aus"
-			ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-			print(version)
-		elseif aktiv then
-			if message == "!help" then
-				response = response .. "\nFolgende Befehle sind funktional \n!farbe,[farbe] - Setzt eine Farbe per User\n!dsa - System DSA \n!sr- System Shadowrun \n?[Menge],[Würfel] \n!off - Tool aus\n"
-				response = response .. "\n[b]System DSA[/b] \n![Wert] -> 1w20 Probe\n" 
-				response = response .. "![Attributwert],[Attributwert],[Attributwert],[Talentwert],<optional Mod> -> 3w20 Probe\n"
-				response = response .. "\n[b]System Shadowrun[/b] \n![Wert] -> [Wert]w6 Probe\n" 
-				response = response .. "![Wert],e -> Exploding w6 Probe\n"
-				response = response .. "[b]Generisch[/b] \n?[Menge],[Würfel]\n? -> 1w6 \n! -> 1w20"
-				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-			elseif message == "!dsa" or message == "!dsa4" then
-				system = "dsa4"
-				print("System DSA 4.1")
-				response = response .. "\n[b]System DSA 4.1[/b]"
-				--response = response .. "\n[b]System DSA[/b] \n![Wert] -> 1w20 Probe\n" 
-				--response = response .. "![Attributwert],[Attributwert],[Attributwert],[Talentwert],<optional Mod> -> 3w20 Probe\n"
-				--response = response .. "[b]Generisch[/b] \n? -> 1w6 \n! -> 1w20"
-				--response = response .. "\n?[Menge],[Würfel]"
-				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-			elseif message == "!sr" or message == "!sr5" then
-				system = "sr5"
-				print("System Shadowrun 5")
-				response = response .. "\n[b]System Shadowrun 5[/b]"
-				--response = response .. "\n[b]System Shadowrun[/b] \n![Wert] -> [Wert]w6 Probe\n" 
-				--response = response .. "![Wert],e -> Exploding w6 Probe\n"
-				--response = response .. "[b]Generisch[/b] \n?[Menge],[Würfel]"
-				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-			elseif message == "!kat" or message == "!deg" then
-				system = "kat"
-				print("System KatharSys aka	Degenesis")
-				response = response .. "\n[b]System KatharSys aka Degenesis[/b]"
-				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-			elseif message == "!off" then
-				aktiv = false
-				system = nil
-				print("Tool Aus")
-				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, "[b]Tool Aus[/b]", 0)
-			elseif 	message == "!statcheck" and aktiv then
-				local res4 = dice.averageTest(100000,4)
-				local res6 = dice.averageTest(100000,6)
-				local res8 = dice.averageTest(100000,8)
-				local res10 = dice.averageTest(100000,10)
-				local res12 = dice.averageTest(100000,12)
-				local res20 = dice.averageTest(100000,20)
-				local res100 = dice.averageTest(100000,100)
-				response = response .. "\n100000 D4 gewürfelt Durchschnitt: " .. res4
-				response = response .. "\n100000 D6 gewürfelt Durchschnitt: " .. res6
-				response = response .. "\n100000 D8 gewürfelt Durchschnitt: " .. res8
-				response = response .. "\n100000 D10 gewürfelt Durchschnitt: " .. res10
-				response = response .. "\n100000 D12 gewürfelt Durchschnitt: " .. res12
-				response = response .. "\n100000 D20 gewürfelt Durchschnitt: " .. res20
-				response = response .. "\n100000 D100 gewürfelt Durchschnitt: " .. res100
-				ts3.requestSendChannelTextMsg(serverConnectionHandlerID, response, 0)
-			end
-		end
-	end
+		    response = response .. "[/b]"
+		    sendResponse(serverConnectionHandlerID, response)
+            return
+        end
+
+        -- Generic override parentheses handling (with safe substring checks)
+        local firstChar = input.safeSubstring(message, 1, 1)
+        local secondChar = input.safeSubstring(message, 2, 2)
+        local lastChar = input.safeSubstring(message, -1)
+        
+        if secondChar == "(" and lastChar == ")" then
+            message = firstChar .. input.safeSubstring(message, 3, #message - 1)
+            memory = system
+            system = nil
+        end
+
+        -- System-specific handling when second char numeric
+        local secondCharNum = tonumber(input.safeSubstring(message, 2, 2))
+        if secondCharNum then
+            print("[TSDiceRoller] onTextMessageEvent: numeric second character detected, attempting system dispatch")
+            
+            -- Dispatch to modular handlers (including DSA)
+            local handler = systems[system] or systems.generic
+            local resp, send = handler.process(message, fromName, dice)
+            if send then sendResponse(serverConnectionHandlerID, response .. resp) end
+            if memory ~= nil then system = memory memory = nil end
+            return
+        end  -- End of: if secondCharNum then
+
+        -- Color Picker (with improved parsing)
+        print("[TSDiceRoller] onTextMessageEvent: checking for color picker command (!farbe)")
+        -- Use safe pattern matching with whitespace handling
+        -- Pattern: ^%!farbe%s+(%S+)$ - matches "!farbe" followed by one or more spaces, then captures the color name
+        local colorMatches = input.matchPattern(input.normalize(message, true), "^%!farbe%s*%W%s*(%S+)$")
+        if colorMatches and #colorMatches > 0 then
+            local colorName = colorMatches[1]
+            print("[TSDiceRoller] onTextMessageEvent: color command matched, colorName=" .. tostring(colorName))
+            response = response .. colors.setUserColor(fromUniqueIdentifier, colorName)
+            sendResponse(serverConnectionHandlerID, response)
+            return
+        else
+            print("[TSDiceRoller] onTextMessageEvent: no color command pattern matched")
+        end
+    end  -- End of: if aktiv then
+
+    -- Admin commands (owner-only)
+    if fromUniqueIdentifier == owner then
+        print("[TSDiceRoller] onTextMessageEvent: admin/owner command processing")
+        print("[TSDiceRoller] onTextMessageEvent: aktiv status=" .. tostring(aktiv))
+        if (not aktiv and input.commandMatchesAny(message, {"!on", "!dice"})) then
+            print("[TSDiceRoller] onTextMessageEvent: activating tool")
+            aktiv = true
+            local resp = "[b]Tool Aktiv[/b] (" .. version .. ")\\n !help -> Zeigt Commands an"
+            sendResponse(serverConnectionHandlerID, resp)
+            return
+        elseif aktiv then
+            print("[TSDiceRoller] onTextMessageEvent: tool active, checking system commands")
+            -- Use case-insensitive command matching for all system selection commands
+            if input.commandMatchesAny(message, {"!dsa", "!dsa4"}) then 
+                print("[TSDiceRoller] onTextMessageEvent: setting system to DSA4")
+                system = "dsa4" 
+                sendResponse(serverConnectionHandlerID, response .. "\n[b]System DSA 4.1[/b]") 
+                return 
+            end
+            if input.commandMatchesAny(message, {"!sr", "!sr5"}) then 
+                print("[TSDiceRoller] onTextMessageEvent: setting system to SR5")
+                system = "sr5" 
+                sendResponse(serverConnectionHandlerID, response .. "\n[b]System Shadowrun 5[/b]") 
+                return 
+            end
+            if input.commandMatchesAny(message, {"!coc", "!call"}) then 
+                print("[TSDiceRoller] onTextMessageEvent: setting system to COC")
+                system = "coc" 
+                sendResponse(serverConnectionHandlerID, response .. "\n[b]System Call of Cthulhu[/b]") 
+                return 
+            end
+            if input.commandMatchesAny(message, {"!kat", "!deg"}) then 
+                print("[TSDiceRoller] onTextMessageEvent: setting system to KAT")
+                system = "kat" 
+                sendResponse(serverConnectionHandlerID, response .. "\n[b]System KatharSys aka Degenesis[/b]") 
+                return 
+            end
+            if input.commandMatchesAny(message, {"!bitd", "!blades"}) then 
+                print("[TSDiceRoller] onTextMessageEvent: setting system to BITD")
+                system = "bitd" 
+                sendResponse(serverConnectionHandlerID, response .. "\n[b]System Blades In The Dark[/b]") 
+                return 
+            end
+            if input.commandMatchesAny(message, {"!pbta", "!apoc"}) then 
+                print("[TSDiceRoller] onTextMessageEvent: setting system to PBTA")
+                system = "pbta" 
+                sendResponse(serverConnectionHandlerID, response .. "\n[b]System Powered By The Apocalypse[/b]") 
+                return 
+            end
+            if input.commandMatchesAny(message, {"!generic"}) then 
+                print("[TSDiceRoller] onTextMessageEvent: setting system to Generic")
+                system = nil
+                sendResponse(serverConnectionHandlerID, response .. "\n[b]System Generic[/b]") 
+                return 
+            end
+            if input.commandMatches(message, "!off") then 
+                print("[TSDiceRoller] onTextMessageEvent: deactivating tool")
+                aktiv = false 
+                system = nil 
+                sendResponse(serverConnectionHandlerID, "[b]Tool Aus[/b]") 
+                return 
+            end
+            if input.commandMatches(message, "!statcheck") and aktiv then
+                print("[TSDiceRoller] onTextMessageEvent: running statcheck diagnostic")
+                local res4 = dice.averageTest(100000,4)
+                local res6 = dice.averageTest(100000,6)
+                local res8 = dice.averageTest(100000,8)
+                local res10 = dice.averageTest(100000,10)
+                local res12 = dice.averageTest(100000,12)
+                local res20 = dice.averageTest(100000,20)
+                local res100 = dice.averageTest(100000,100)
+                local msg = "\n100000 D4 gewürfelt Durchschnitt: " .. res4
+                msg = msg .. "\n100000 D6 gewürfelt Durchschnitt: " .. res6
+                msg = msg .. "\n100000 D8 gewürfelt Durchschnitt: " .. res8
+                msg = msg .. "\n100000 D10 gewürfelt Durchschnitt: " .. res10
+                msg = msg .. "\n100000 D12 gewürfelt Durchschnitt: " .. res12
+                msg = msg .. "\n100000 D20 gewürfelt Durchschnitt: " .. res20
+                msg = msg .. "\n100000 D100 gewürfelt Durchschnitt: " .. res100
+                sendResponse(serverConnectionHandlerID, msg)
+                return
+            end
+        end
+    end
 end
 
-roller_events = {
-	onTextMessageEvent = onTextMessageEvent,
-
-}
-
+roller_events = { onTextMessageEvent = onTextMessageEvent }
