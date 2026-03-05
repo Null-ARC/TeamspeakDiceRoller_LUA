@@ -1,5 +1,19 @@
 # Changelog - TeamspeakDiceRoller
-
+## Patch 1.1.0 - 2026-02-18
+The Boomer Patch (Das ham' wa' immer scho' so g'macht)
+### Added
+#### Parenthesis System
+- Added a full roll System using the format (1w20) or (1d20) where the first number is the count and the second number the size of the die
+## Hotfix 1.0.5 - 2026-02-18
+- Fixed the !help command
+## Hotfix 1.0.4 - 2026-02-18
+- Fixed formatting issues in the DSA module
+## Hotfix 1.0.3 - 2026-02-17
+- Fixed a bug in the DSA module when using "0" as erschwernis/erleichterung
+## Hotfix 1.0.2 - 2026-02-17
+- Added support for inline comments while rolling. Everything after # is ignored
+## Hotfix 1.0.1 - 2026-02-17
+- Removed dsa.lua from top level folder
 ## Release 1.0.0 - 2026-02-17
 The British Museum Update (Removed most Pyramids)
 ### Overview

@@ -127,7 +127,7 @@ local function process(message, fromName, dice)
             response = response .. "[" .. roll1 .. "]\n"
             if roll1 == 1 or roll1 == 20 then response = response .. "Bestätigungswurf: [" .. roll2 .. "]\n" end
         else
-            response = response .. " Die Würfe sind: [" .. roll1 .. ", " .. roll2 .. ", " .. roll3 .. "]\n"
+            response = response .. "\nDie Würfe sind: [[b]" .. roll1 .. ", " .. roll2 .. ", " .. roll3 .. "[/b]]\n"
         end
         
         local restSkill = skill
@@ -136,11 +136,13 @@ local function process(message, fromName, dice)
             -- Complex modification handling for talent modifications
             if change < 0 then
                 change = math.abs(change)
+                response = response .. "Probe [b]erleichtert[/b] um " .. change .. "\n"
                 restSkill = restSkill + change
                 restSkill = applyAttributes(restSkill, {roll1, roll2, roll3}, atts)
                 response = appendResult(response, restSkill, skill, krit, patz)
             elseif change > 0 then
                 change = math.abs(change)
+                response = response .. "Probe [b]erschwert[/b] um " .. change .. "\n"
                 restSkill = restSkill - change
                 if restSkill < 0 then
                     -- Apply negative modification to attributes
@@ -171,6 +173,9 @@ local function process(message, fromName, dice)
             end
         elseif simple then
             -- Simple check logic (single attribute)
+            if change ~= 0 then
+                 response = "\n" .. response .. "Probe [b]" .. (change > 0 and "erschwert" or "erleichtert") .. "[/b] um " .. math.abs(change) .. "\n"
+            end
             if (roll1 + change) > att1 then
                 local erlei = (roll1 + change) - att1
                 if roll1 == 20 then

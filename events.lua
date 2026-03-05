@@ -31,7 +31,104 @@ local system = nil
 local memory = nil
 local OWNER_UNIQUE_ID = nil
 
-local version = "1.0.0"
+local version = "1.1.0"
+
+-- Centralized list of commands for help output (grouped and documented)
+local commandsList = {
+    {
+        group = "Allgemein",
+        entries = {
+            { cmd = "!help, !hilfe", desc = "Zeigt Hilfe an" },
+            { cmd = "!farbe <farbe>", desc = "Setzt die Farbe für den Benutzer" },
+            { cmd = "!farbe,<hexcode>", desc = "Setzt die Farbe für den Benutzer" },
+            { cmd = "!<dice>", desc = "1d<dice>" },
+            { cmd = "!<count>,<dice>,<optional>", desc = "<count>d<dice>+<optional>" },
+            { cmd = "?<count>,<dice>,<schwelle>", desc = "<count>d<dice> Erfolge über <schwelle>" },
+            { cmd = "!treffer", desc = "DSA Trefferzonenwürfel" },
+            { cmd = "(1w20) / (1d20)", desc = "<count>d<dice>" },
+        }
+    },
+    {
+        group = "Einfache Würfe",
+        entries = {
+            { cmd = "!", desc = "Würfelt 1W20" },
+            { cmd = "?", desc = "Würfelt 1W6" },
+            { cmd = "!!", desc = "Würfelt 1W100" },
+            { cmd = "??", desc = "Würfelt 2W6 (1W66)" },
+        }
+    },
+    {
+        group = "System-Auswahl (Admin)",
+        entries = {
+            { cmd = "!dsa, !dsa4", desc = "Setzt System auf DSA 4.1", admin = true },
+            { cmd = "!sr, !sr5", desc = "Setzt System auf Shadowrun 5", admin = true },
+            { cmd = "!coc, !call", desc = "Setzt System auf Call of Cthulhu", admin = true },
+            { cmd = "!kat, !deg", desc = "Setzt System auf KatharSys / Degenesis", admin = true },
+            { cmd = "!bitd, !blades", desc = "Setzt System auf Blades in the Dark", admin = true },
+            { cmd = "!pbta, !apoc", desc = "Setzt System auf Powered By The Apocalypse", admin = true },
+            { cmd = "!generic", desc = "Setzt System auf Generic (keine system-spezifischen Würfe)", admin = true },
+        }
+    },
+    {
+        group = "Admin / Werkzeug",
+        entries = {
+            { cmd = "!on, !dice", desc = "Aktiviert das Tool", admin = true },
+            { cmd = "!off", desc = "Deaktiviert das Tool", admin = true },
+            { cmd = "!statcheck", desc = "Führt Statistik-Diagnosewürfe durch", admin = true },
+        }
+    },
+    {
+        group = "DSA 4.1 Spezifisch (nur mit aktivem System)",
+        entries = {
+            { cmd = "!<attributswert>,<modifikator>", desc = "Ein einzelner Wurf gegen ein Attribut mit optionalem Modifikator."},
+            { cmd = "!<att1>,<att2>,<att3>,<skill_value>,<modifikator>", desc = "DSA Talentprobe mit optionalem Modifikator."},
+        }
+    },
+    {
+        group = "Shadowrun 5 Spezifisch (nur mit aktivem System)",
+        entries = {
+            { cmd = "!<pool_size>", desc = "Shadowrun Probe"},
+            { cmd = "!<pool_size>,e", desc = "Shadowrun Probe mit Edge"},
+        }
+    },
+    {
+        group = "Call of Cthulhu Spezifisch (nur mit aktivem System)",
+        entries = {
+            { cmd = "!<skill_value>,<bonus_dice>", desc = "CoC Probe mit Bonus/Malus-würfeln"},
+        }
+    },
+    {
+        group = "KatharSys / Degenesis Spezifisch (nur mit aktivem System)",
+        entries = {
+            { cmd = "!<pool_size>", desc = "Degenesis Probe"},
+        }
+    },
+    {
+        group = "Blades in the Dark Spezifisch (nur mit aktivem System)",
+        entries = {
+            { cmd = "!<pool_size>", desc = "Blades Probe"},
+        }
+    },
+    {
+        group = "Powered By The Apocalypse Spezifisch (nur mit aktivem System)",
+        entries = {
+            { cmd = "!<modifier>", desc = "PBtA Probe"},
+        }
+    }
+}
+
+    -- Build help message from centralized commandsList (works even when tool inactive)
+local function buildHelpMessage()
+    local msg = "\n[b]Verfügbare Befehle[/b]\n"
+    for _, group in ipairs(commandsList) do
+        msg = msg .. "\n[b]" .. group.group .. "[/b]\n"
+        for _, entry in ipairs(group.entries) do
+            local label = entry.cmd
+            msg = msg .. string.format("%-28s - %s\n", label, entry.desc)
+        end
+    end
+    return msg
+end
 
 function detectOwner(serverConnectionHandlerID)
     print("[TSDiceRoller] detectOwner() called with serverConnectionHandlerID=" .. tostring(serverConnectionHandlerID))
@@ -114,6 +211,12 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
     local normalizedMsg = input.normalize(message, true)
     print("[TSDiceRoller] onTextMessageEvent: normalized message (lowercase)=" .. tostring(normalizedMsg))
 
+    if input.commandMatchesAny(message, {"!help", "!hilfe"}) then
+        print("[TSDiceRoller] onTextMessageEvent: help command detected (top-level)")
+        sendResponse(serverConnectionHandlerID, response .. buildHelpMessage())
+        return
+    end
+
     -- Simple generic rolls & help when active
     if aktiv then
         print("[TSDiceRoller] onTextMessageEvent: tool is ACTIVE")
@@ -121,13 +224,41 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
             print("[TSDiceRoller] onTextMessageEvent: simple roll handled, returning")
             return 
         end
-        if input.commandMatchesAny(message, {"!help", "!hilfe"}) then
-            print("[TSDiceRoller] onTextMessageEvent: help command detected")
-            local help = "\nFolgende Befehle sind funktional:\n!farbe,[farbe] - Setzt eine Farbe per User\n!(<Input>) oder ?(<Input>) -> Würfelt den <Input> als Generischen Wurf\n!off - Tool aus\n"
-            help = help .. "\n[b]Allgemeine Würfe[/b] (immer gültig)\n! -> 1W20\\n? -> 1W6\\n!! -> 1W100\n?? -> '1W66'(2W6)-Probe\n"
-            sendResponse(serverConnectionHandlerID, response .. help)
-            return
+        
+        -- Parenthesis-based generic roll: (1w20) or (1d20) - available regardless of selected system
+        do
+            local parenMatches = input.matchPattern(normalizedMsg, "^%((%d+)%s*[wd]%s*(%d+)%)$")
+            if parenMatches and #parenMatches >= 2 then
+                local cnt = tonumber(parenMatches[1])
+                local size = tonumber(parenMatches[2])
+                local MAX_COUNT, MAX_SIZE = 50, 100000
+                if not cnt or not size or cnt < 1 or size < 2 then
+                    sendResponse(serverConnectionHandlerID, response .. "Ungültiges Wurf-Format. Verwende (AnzahlwGröße), z.B. (3w6)")
+                    return
+                end
+                if cnt > MAX_COUNT then
+                    sendResponse(serverConnectionHandlerID, response .. "Zu viele Würfel angefordert (max " .. MAX_COUNT .. ")")
+                    return
+                end
+                if size > MAX_SIZE then
+                    sendResponse(serverConnectionHandlerID, response .. "Unzulässige Würfelgröße (max " .. MAX_SIZE .. ")")
+                    return
+                end
+
+                local rolls = dice.rollDice(cnt, size)
+                local parts = {}
+                local sum = 0
+                for _, r in ipairs(rolls) do
+                    parts[#parts + 1] = tostring(r)
+                    sum = sum + (tonumber(r) or 0)
+                end
+                local rollStr = table.concat(parts, ", ")
+                local resp = "\n[b]" .. fromName .. "[/b] würfelt " .. cnt .. "W" .. size .. "[b]\n" .. rollStr .. "[/b] \n(Summe: " .. sum .. ")"
+                sendResponse(serverConnectionHandlerID, response .. resp)
+                return
+            end
         end
+
         if input.commandMatchesAny(message, {"!treffer", "!treff"}) then
 			print("Treff")
 			local tz = dice.d20()[1]
@@ -193,7 +324,7 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
         if (not aktiv and input.commandMatchesAny(message, {"!on", "!dice"})) then
             print("[TSDiceRoller] onTextMessageEvent: activating tool")
             aktiv = true
-            local resp = "[b]Tool Aktiv[/b] (" .. version .. ")\\n !help -> Zeigt Commands an"
+            local resp = "[b]Tool Aktiv[/b] (" .. version .. ")\n !help -> Zeigt Commands an"
             sendResponse(serverConnectionHandlerID, resp)
             return
         elseif aktiv then
