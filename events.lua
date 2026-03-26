@@ -199,6 +199,10 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
         return  -- Silently ignore invalid input (nil, empty, or whitespace-only)
     end
     
+    -- Strip trailing comments
+    message = input.stripTrailingComment(message)
+    print("[TSDiceRoller] onTextMessageEvent: message after stripping comment: " .. tostring(message))
+    
     if targetMode ~= 2 then 
         print("[TSDiceRoller] onTextMessageEvent: returning - targetMode not 2 (targetMode=" .. tostring(targetMode) .. ")")
         return 
@@ -227,13 +231,24 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
         
         -- Parenthesis-based generic roll: (1w20) or (1d20) - available regardless of selected system
         do
-            local parenMatches = input.matchPattern(normalizedMsg, "^%((%d+)%s*[wd]%s*(%d+)%)$")
+            local parenMatches = input.matchPattern(normalizedMsg, "^%(%s*(%d+)%s*[dw]%s*(%d+)%s*([+%-0-9]*)%s*%)$")
             if parenMatches and #parenMatches >= 2 then
                 local cnt = tonumber(parenMatches[1])
                 local size = tonumber(parenMatches[2])
+                local modStr = parenMatches[3]
+                local mod = 0
+                if modStr and modStr ~= "" then
+                    local sign, numStr = modStr:match("^([+-]?)%s*(%d+)$")
+                    local num = tonumber(numStr)
+                    if sign == "-" then
+                        mod = -num
+                    else
+                        mod = num
+                    end
+                end
                 local MAX_COUNT, MAX_SIZE = 50, 100000
                 if not cnt or not size or cnt < 1 or size < 2 then
-                    sendResponse(serverConnectionHandlerID, response .. "Ungültiges Wurf-Format. Verwende (AnzahlwGröße), z.B. (3w6)")
+                    sendResponse(serverConnectionHandlerID, response .. "Ungültiges Wurf-Format. Verwende (AnzahlwGröße[+/-Mod]), z.B. (3w6+2)")
                     return
                 end
                 if cnt > MAX_COUNT then
@@ -253,7 +268,16 @@ local function onTextMessageEvent(serverConnectionHandlerID, targetMode, toID, f
                     sum = sum + (tonumber(r) or 0)
                 end
                 local rollStr = table.concat(parts, ", ")
-                local resp = "\n[b]" .. fromName .. "[/b] würfelt " .. cnt .. "W" .. size .. "[b]\n" .. rollStr .. "[/b] \n(Summe: " .. sum .. ")"
+                local finalSum = sum + mod
+                local modDisplay = ""
+                if mod ~= 0 then
+                    modDisplay = (mod > 0 and "+" or "") .. mod
+                end
+                local resp = "\n[b]" .. fromName .. "[/b] würfelt " .. cnt .. "W" .. size .. modDisplay .. "[b]\n" .. rollStr .. "[/b] \n(Summe: " .. sum
+                if mod ~= 0 then
+                    resp = resp .. " " .. (mod > 0 and "+" or "") .. mod .. " = " .. finalSum
+                end
+                resp = resp .. ")"
                 sendResponse(serverConnectionHandlerID, response .. resp)
                 return
             end
