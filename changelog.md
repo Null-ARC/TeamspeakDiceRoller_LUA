@@ -1,4 +1,7 @@
 # Changelog - TeamspeakDiceRoller
+## Hotfix 1.1.1 - 2026-03-26
+Fixed the comment only working in DSA rolls
+Fixed a bug which did not allow parenthesis rolls to have add/subtracts
 ## Patch 1.1.0 - 2026-02-18
 The Boomer Patch (Das ham' wa' immer scho' so g'macht)
 ### Added

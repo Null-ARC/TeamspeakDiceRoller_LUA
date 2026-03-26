@@ -300,6 +300,18 @@ local function matchPattern(str, pattern)
     end
 end
 
+-- Strip trailing comment in the format "# <some text>" from the input
+-- @param str: input string
+-- @return: string with trailing comment removed
+local function stripTrailingComment(str)
+    if not str then return "" end
+    -- Replace trailing " # <some text>" with empty
+    local result = str:gsub("(%s*#.-)$", "")
+    result = trim(result)
+    print("[TSDiceRoller] stripTrailingComment: '" .. tostring(str) .. "' -> '" .. tostring(result) .. "'")
+    return result
+end
+
 print("[TSDiceRoller] Input module initialization complete")
 
 local Input = {
@@ -316,6 +328,7 @@ local Input = {
     safeSubstring = safeSubstring,
     splitFirstChar = splitFirstChar,
     matchPattern = matchPattern,
+    stripTrailingComment = stripTrailingComment,
 }
 
 return Input
